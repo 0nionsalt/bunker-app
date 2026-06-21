@@ -29,7 +29,7 @@ services:
     container_name: bunker-web
     restart: unless-stopped
     ports:
-      - "${PORT:-8080}:80"
+      - "${PORT:-7532}:80"
     depends_on:
       api:
         condition: service_healthy

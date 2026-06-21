@@ -43,7 +43,7 @@ cp .env.example .env
 Open `.env` and set a strong secret key:
 
 ```env
-PORT=8080
+PORT=7532
 JWT_SECRET=your-secret-key-here
 ```
 
@@ -64,7 +64,7 @@ This will:
 ### 4. Open the app
 
 ```
-http://localhost:8080
+http://localhost:7532
 ```
 
 **Default admin login:**
@@ -134,7 +134,7 @@ All options live in your `.env` file:
 
 | Variable | Default | Description |
 |---|---|---|
-| `PORT` | `8080` | The port the web UI is served on |
+| `PORT` | `7532` | The port the web UI is served on |
 | `JWT_SECRET` | *(example value)* | Secret used to sign login tokens — **must be changed** |
 
 To change the port, edit `.env` and restart:
@@ -179,7 +179,7 @@ docker run --rm \
 | Container | Base Image | Internal Port | Role |
 |---|---|---|---|
 | `bunker-api` | Node 20 Alpine | 3001 | REST API + SQLite database |
-| `bunker-web` | Nginx Alpine | 80 → **8080** | SPA frontend + API proxy |
+| `bunker-web` | Nginx Alpine | 80 → **7532** | SPA frontend + API proxy |
 
 The frontend container proxies all `/api/` requests to the API container internally — no CORS issues, no exposed API port.
 
@@ -192,7 +192,7 @@ The frontend container proxies all `/api/` requests to the API container interna
 Change the port in `.env` and restart, or find what's using port 8080:
 
 ```bash
-lsof -i :8080
+lsof -i :7532
 ```
 
 **`docker compose` command not found**
