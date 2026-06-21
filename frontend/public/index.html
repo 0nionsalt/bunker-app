@@ -1622,8 +1622,9 @@ function renderGrid() {
       if (selectedRoomsForDelete.has(room.id)) {
         block.classList.add('selected-for-delete');
       }
+    } else {
+      block.onmousedown = (e) => startDrag(e, room, block);
     }
-    block.onmousedown = (e) => startDrag(e, room, block);
     canvas.appendChild(block);
     // block needs to overlay using grid child placement
     block.style.gridColumn = `${room.x+1} / span ${room.width}`;
