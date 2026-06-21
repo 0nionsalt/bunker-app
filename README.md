@@ -141,6 +141,16 @@ node server.js
 
 ---
 
+## � Updating
+
+To update to the latest version:
+
+```bash
+git pull && docker compose up -d --build
+```
+
+---
+
 ## 🛠 Uninstallation
 
 To completely remove the application and all its data:
