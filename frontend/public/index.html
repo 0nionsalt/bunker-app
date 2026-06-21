@@ -1305,9 +1305,17 @@ window.onload = () => {
   updateClock();
   setInterval(updateClock, 1000);
   checkVersion();
-  setInterval(checkVersion, 60000); // Check every minute
+  setInterval(checkVersion, 30000); // Check every 30 seconds
   if (token && currentUser) initApp();
 };
+
+// Check version when tab becomes visible or window gets focus
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) checkVersion();
+});
+window.addEventListener('focus', () => {
+  checkVersion();
+});
 
 function updateClock() {
   const d = new Date();
@@ -1351,6 +1359,7 @@ async function doLogin() {
     const d = await r.json();
     if (!r.ok) return showAuthError(d.error || 'Login failed');
     saveAuth(d);
+    checkVersion();
     initApp();
   } catch { showAuthError('Connection failed — is the server running?'); }
 }
@@ -1386,6 +1395,7 @@ function logout() {
   localStorage.removeItem('vault_token'); localStorage.removeItem('vault_user');
   document.getElementById('app').style.display = 'none';
   document.getElementById('auth-screen').style.display = 'flex';
+  checkVersion();
 }
 
 // ═══════════════════════ APP INIT ═══════════════════════
@@ -1401,6 +1411,7 @@ function initApp() {
   if (currentUser.role === 'admin') {
     document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
   }
+  checkVersion();
   loadStats();
   loadBunkers();
   loadRSSFeeds();
