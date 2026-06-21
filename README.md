@@ -17,7 +17,7 @@ docker compose up -d --build
 Let's get cracking! http://localhost:7532
 ```
 
-**Default admin credentials:** `admin` / `admin`
+**Default admin credentials:** `admin` / `admin123`
 _(Change these immediately in production)_
 
 ---
@@ -89,7 +89,7 @@ Data is persisted in a named Docker volume (`bunker-data`).
 
 | Variable | Default | Description |
 |---|---|---|
-| `PORT` | `8080` | External port for the web UI |
+| `PORT` | `7532` | External port for the web UI |
 | `JWT_SECRET` | `change-me-in-production-2077` | JWT signing secret — **change this!** |
 
 ---
@@ -137,6 +137,16 @@ To run the API locally without Docker:
 cd backend
 npm install
 node server.js
+```
+
+---
+
+## 🛠 Uninstallment
+
+To uninstall entirety of the bunker-app
+
+```bash
+soon
 ```
 
 The frontend is a single HTML file — open it in any browser or serve via any static server.
