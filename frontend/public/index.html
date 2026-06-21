@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" type="image/x-icon" href="images/favicon.ico" />
 <title>VAULT // Bunker Command</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap');
@@ -498,6 +499,16 @@
   }
   .room-block:hover { filter: brightness(1.3); }
   .room-block.dragging { opacity: 0.7; z-index: 100; }
+  .room-block.selected-for-delete {
+    border: 2px solid var(--red) !important;
+    box-shadow: 0 0 8px rgba(192,56,56,0.5);
+  }
+  .room-block.delete-mode {
+    cursor: pointer;
+  }
+  .room-block.delete-mode:hover {
+    filter: brightness(1.1);
+  }
   .resize-handle {
     position: absolute;
     width: 8px;
@@ -928,6 +939,9 @@
         </div>
         <div class="flex-row">
           <button class="btn btn-primary btn-sm" onclick="openAddRoom()">+ ADD ROOM</button>
+          <button class="btn btn-danger btn-sm" id="btn-delete-mode" onclick="toggleDeleteMode()">✕ DELETE ROOMS</button>
+          <button class="btn btn-ghost btn-sm" id="btn-cancel-delete" onclick="cancelDeleteMode()" style="display:none">CANCEL</button>
+          <button class="btn btn-danger btn-sm" id="btn-confirm-delete" onclick="confirmDeleteSelected()" style="display:none">DELETE SELECTED (0)</button>
         </div>
       </div>
       <div class="builder-container">
@@ -1283,6 +1297,8 @@ let initialRoomY = 0;
 let initialRoomW = 0;
 let initialRoomH = 0;
 let contextMenuRoom = null;
+let deleteMode = false;
+let selectedRoomsForDelete = new Set();
 
 // ═══════════════════════ INIT ═══════════════════════
 window.onload = () => {
@@ -1583,15 +1599,90 @@ function renderGrid() {
     block.onclick = (e) => {
       if (!isDragging && !isResizing) {
         e.stopPropagation();
-        showContextMenu(e, room);
+        if (deleteMode) {
+          toggleRoomSelection(room.id, block);
+        } else {
+          showContextMenu(e, room);
+        }
       }
     };
+    if (deleteMode) {
+      block.classList.add('delete-mode');
+      if (selectedRoomsForDelete.has(room.id)) {
+        block.classList.add('selected-for-delete');
+      }
+    }
     block.onmousedown = (e) => startDrag(e, room, block);
     canvas.appendChild(block);
     // block needs to overlay using grid child placement
     block.style.gridColumn = `${room.x+1} / span ${room.width}`;
     block.style.gridRow    = `${room.y+1} / span ${room.height}`;
   });
+}
+
+function toggleDeleteMode() {
+  deleteMode = !deleteMode;
+  selectedRoomsForDelete.clear();
+  
+  const btnDeleteMode = document.getElementById('btn-delete-mode');
+  const btnCancelDelete = document.getElementById('btn-cancel-delete');
+  const btnConfirmDelete = document.getElementById('btn-confirm-delete');
+  
+  if (deleteMode) {
+    btnDeleteMode.style.display = 'none';
+    btnCancelDelete.style.display = 'inline-flex';
+    btnConfirmDelete.style.display = 'inline-flex';
+    updateDeleteButton();
+  } else {
+    btnDeleteMode.style.display = 'inline-flex';
+    btnCancelDelete.style.display = 'none';
+    btnConfirmDelete.style.display = 'none';
+  }
+  
+  loadRooms();
+}
+
+function cancelDeleteMode() {
+  deleteMode = false;
+  selectedRoomsForDelete.clear();
+  
+  document.getElementById('btn-delete-mode').style.display = 'inline-flex';
+  document.getElementById('btn-cancel-delete').style.display = 'none';
+  document.getElementById('btn-confirm-delete').style.display = 'none';
+  
+  loadRooms();
+}
+
+function toggleRoomSelection(roomId, block) {
+  if (selectedRoomsForDelete.has(roomId)) {
+    selectedRoomsForDelete.delete(roomId);
+    block.classList.remove('selected-for-delete');
+  } else {
+    selectedRoomsForDelete.add(roomId);
+    block.classList.add('selected-for-delete');
+  }
+  updateDeleteButton();
+}
+
+function updateDeleteButton() {
+  const btn = document.getElementById('btn-confirm-delete');
+  btn.textContent = `DELETE SELECTED (${selectedRoomsForDelete.size})`;
+}
+
+async function confirmDeleteSelected() {
+  if (selectedRoomsForDelete.size === 0) return;
+  if (!confirm(`Delete ${selectedRoomsForDelete.size} room(s)?`)) return;
+  
+  try {
+    for (const roomId of selectedRoomsForDelete) {
+      await api('/rooms/' + roomId, { method: 'DELETE' });
+    }
+    cancelDeleteMode();
+    loadRooms();
+  } catch (e) {
+    console.error('Failed to delete rooms:', e);
+    alert('Failed to delete some rooms');
+  }
 }
 
 function showContextMenu(e, room) {
