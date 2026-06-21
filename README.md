@@ -7,7 +7,7 @@
 ## 🚀 Quick Start
 
 ```bash
-git clone <your-repo>
+git clone https://github.com/0nionsalt/bunker-app.git
 cd bunker-app
 
 # Copy env config
