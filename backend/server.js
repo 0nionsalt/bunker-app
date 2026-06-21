@@ -9,6 +9,7 @@ const Parser = require('rss-parser');
 const app = express();
 const PORT = 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'bunker-secret-2077';
+const APP_VERSION = '2.7.0';
 const db = new Database('/data/bunker.db');
 const parser = new Parser();
 
@@ -321,6 +322,9 @@ app.get('/api/rss-feeds/:id/fetch', auth, async (req, res) => {
 
 // ─── HEALTH (public, for Docker healthcheck) ─────────────────────────────────
 app.get("/health", (req, res) => res.json({ status: "ok" }));
+
+// ─── VERSION (public) ─────────────────────────────────────────────────────────
+app.get("/api/version", (req, res) => res.json({ version: APP_VERSION }));
 
 // ─── STATS ───────────────────────────────────────────────────────────────────
 app.get('/api/stats', auth, (req, res) => {

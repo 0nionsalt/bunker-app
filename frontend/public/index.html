@@ -281,6 +281,26 @@
     font-family: var(--font-mono);
     font-size: 12px;
     color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .version-status {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 2px;
+    letter-spacing: 0.1em;
+  }
+  .version-up-to-date {
+    background: rgba(124,184,78,0.15);
+    color: var(--green);
+    border: 1px solid rgba(124,184,78,0.3);
+  }
+  .version-new {
+    background: rgba(232,160,32,0.15);
+    color: var(--amber);
+    border: 1px solid rgba(232,160,32,0.3);
   }
 
   .page { display: none; padding: 24px; flex: 1; }
@@ -492,6 +512,51 @@
   .resize-handle.sw { bottom: 0; left: 0; cursor: sw-resize; }
   .resize-handle.ne { top: 0; right: 0; cursor: ne-resize; }
   .resize-handle.nw { top: 0; left: 0; cursor: nw-resize; }
+
+  /* ── ROOM CONTEXT MENU ── */
+  .room-context-menu {
+    position: absolute;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 8px 0;
+    min-width: 180px;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    display: none;
+  }
+  .room-context-menu.open { display: block; }
+  .context-menu-item {
+    padding: 8px 16px;
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.15s;
+  }
+  .context-menu-item:hover { background: rgba(184,224,74,0.1); color: var(--acid); }
+  .context-menu-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+  }
+  .context-menu-item.danger:hover { background: rgba(192,56,56,0.1); color: var(--red); }
+  .context-menu-type-select {
+    padding: 8px 16px;
+  }
+  .context-menu-type-select select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 8px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    border-radius: var(--radius);
+  }
 
   /* ── SUPPLIES ── */
   .supply-table { width: 100%; border-collapse: collapse; }
@@ -793,7 +858,10 @@
     <div class="topbar">
       <div class="topbar-title" id="topbar-title">DASHBOARD</div>
       <div class="status-dot"></div>
-      <div class="topbar-time" id="topbar-time"></div>
+      <div class="topbar-time">
+        <span id="topbar-time"></span>
+        <span id="version-status" class="version-status version-up-to-date">UP TO DATE</span>
+      </div>
     </div>
 
     <!-- DASHBOARD -->
@@ -880,11 +948,37 @@
         <div class="builder-canvas">
           <div class="panel">
             <div class="panel-header">
-              <div class="panel-title">Grid Map (30×20)</div>
+              <div class="panel-title">Grid Map (30×15)</div>
               <div class="text-muted">Click grid to place rooms • Drag rooms to move • Drag corners to resize</div>
             </div>
-            <div class="panel-body" style="overflow-x:auto">
+            <div class="panel-body" style="overflow-x:auto; position:relative">
               <div id="grid-canvas"></div>
+              <div class="room-context-menu" id="room-context-menu">
+                <div class="context-menu-type-select">
+                  <label style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;display:block">Change Type</label>
+                  <select id="context-room-type" onchange="changeRoomTypeFromContext()">
+                    <option value="command">Command Centre</option>
+                    <option value="dormitory">Dormitory</option>
+                    <option value="kitchen">Kitchen / Mess</option>
+                    <option value="medical">Medical Bay</option>
+                    <option value="armory">Armoury</option>
+                    <option value="storage">Storage</option>
+                    <option value="comms">Comms Room</option>
+                    <option value="generator">Generator Room</option>
+                    <option value="water">Water Treatment</option>
+                    <option value="rec">Recreation</option>
+                    <option value="garage">Vehicle Bay</option>
+                    <option value="airlock">Airlock</option>
+                  </select>
+                </div>
+                <div class="context-menu-divider"></div>
+                <div class="context-menu-item" onclick="openEditRoomFromContext()">
+                  <span>✎</span> Edit Room
+                </div>
+                <div class="context-menu-item danger" onclick="deleteRoomFromContext()">
+                  <span>✕</span> Delete Room
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1010,7 +1104,7 @@
       </div>
       <div class="grid-2">
         <div class="form-group"><label>Grid X</label><input id="ar-x" type="number" value="0" min="0" max="28" /></div>
-        <div class="form-group"><label>Grid Y</label><input id="ar-y" type="number" value="0" min="0" max="18" /></div>
+        <div class="form-group"><label>Grid Y</label><input id="ar-y" type="number" value="0" min="0" max="13" /></div>
         <div class="form-group"><label>Width (cells)</label><input id="ar-w" type="number" value="3" min="1" max="10" /></div>
         <div class="form-group"><label>Height (cells)</label><input id="ar-h" type="number" value="2" min="1" max="8" /></div>
       </div>
@@ -1051,7 +1145,7 @@
       </div>
       <div class="grid-2">
         <div class="form-group"><label>Grid X</label><input id="er-x" type="number" value="0" min="0" max="28" /></div>
-        <div class="form-group"><label>Grid Y</label><input id="er-y" type="number" value="0" min="0" max="18" /></div>
+        <div class="form-group"><label>Grid Y</label><input id="er-y" type="number" value="0" min="0" max="13" /></div>
         <div class="form-group"><label>Width (cells)</label><input id="er-w" type="number" value="3" min="1" max="10" /></div>
         <div class="form-group"><label>Height (cells)</label><input id="er-h" type="number" value="2" min="1" max="8" /></div>
       </div>
@@ -1169,6 +1263,7 @@
 <script>
 // ═══════════════════════ STATE ═══════════════════════
 const API = '/api';
+const CURRENT_VERSION = '2.7.0';
 let token = localStorage.getItem('vault_token');
 let currentUser = JSON.parse(localStorage.getItem('vault_user') || 'null');
 let currentBunker = null;
@@ -1187,11 +1282,14 @@ let initialRoomX = 0;
 let initialRoomY = 0;
 let initialRoomW = 0;
 let initialRoomH = 0;
+let contextMenuRoom = null;
 
 // ═══════════════════════ INIT ═══════════════════════
 window.onload = () => {
   updateClock();
   setInterval(updateClock, 1000);
+  checkVersion();
+  setInterval(checkVersion, 60000); // Check every minute
   if (token && currentUser) initApp();
 };
 
@@ -1199,6 +1297,29 @@ function updateClock() {
   const d = new Date();
   const el = document.getElementById('topbar-time');
   if (el) el.textContent = d.toUTCString().slice(0,-3) + ' UTC';
+}
+
+async function checkVersion() {
+  try {
+    const r = await fetch('/api/version');
+    const d = await r.json();
+    const el = document.getElementById('version-status');
+    if (el) {
+      if (d.version === CURRENT_VERSION) {
+        el.textContent = 'UP TO DATE';
+        el.className = 'version-status version-up-to-date';
+      } else {
+        el.textContent = `NEW: ${d.version}`;
+        el.className = 'version-status version-new';
+      }
+    }
+  } catch {
+    const el = document.getElementById('version-status');
+    if (el) {
+      el.textContent = 'UNKNOWN';
+      el.className = 'version-status';
+    }
+  }
 }
 
 // ═══════════════════════ AUTH ═══════════════════════
@@ -1395,7 +1516,7 @@ const ROOM_TYPES = {
   airlock:   { label:'Airlock',    color:'#4a2a1a', icon:'⊠' },
 };
 
-const GRID_W = 30, GRID_H = 20;
+const GRID_W = 30, GRID_H = 15;
 
 function buildRoomTypeList() {
   const el = document.getElementById('room-type-list');
@@ -1462,7 +1583,7 @@ function renderGrid() {
     block.onclick = (e) => {
       if (!isDragging && !isResizing) {
         e.stopPropagation();
-        showRoomInfo(room);
+        showContextMenu(e, room);
       }
     };
     block.onmousedown = (e) => startDrag(e, room, block);
@@ -1472,6 +1593,80 @@ function renderGrid() {
     block.style.gridRow    = `${room.y+1} / span ${room.height}`;
   });
 }
+
+function showContextMenu(e, room) {
+  contextMenuRoom = room;
+  const menu = document.getElementById('room-context-menu');
+  const select = document.getElementById('context-room-type');
+  select.value = room.type;
+  
+  // Position menu near the click
+  const rect = e.target.getBoundingClientRect();
+  const canvasRect = document.getElementById('grid-canvas').getBoundingClientRect();
+  
+  let x = e.clientX - canvasRect.left + 10;
+  let y = e.clientY - canvasRect.top + 10;
+  
+  // Keep menu within bounds
+  const menuWidth = 180;
+  const menuHeight = 150;
+  if (x + menuWidth > canvasRect.width) x = e.clientX - canvasRect.left - menuWidth - 10;
+  if (y + menuHeight > canvasRect.height) y = e.clientY - canvasRect.top - menuHeight - 10;
+  
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+  menu.classList.add('open');
+  
+  // Also show room info in the sidebar
+  showRoomInfo(room);
+}
+
+function hideContextMenu() {
+  const menu = document.getElementById('room-context-menu');
+  menu.classList.remove('open');
+  contextMenuRoom = null;
+}
+
+async function changeRoomTypeFromContext() {
+  if (!contextMenuRoom) return;
+  const newType = document.getElementById('context-room-type').value;
+  const rt = ROOM_TYPES[newType];
+  
+  try {
+    await api('/rooms/' + contextMenuRoom.id, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        type: newType,
+        color: rt.color,
+        name: rt.label
+      })
+    });
+    hideContextMenu();
+    loadRooms();
+  } catch (e) {
+    console.error('Failed to change room type:', e);
+  }
+}
+
+function openEditRoomFromContext() {
+  if (!contextMenuRoom) return;
+  hideContextMenu();
+  openEditRoom(contextMenuRoom);
+}
+
+function deleteRoomFromContext() {
+  if (!contextMenuRoom) return;
+  hideContextMenu();
+  deleteRoom(contextMenuRoom.id);
+}
+
+// Close context menu when clicking elsewhere
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('room-context-menu');
+  if (menu.classList.contains('open') && !menu.contains(e.target)) {
+    hideContextMenu();
+  }
+});
 
 function startDrag(e, room, block) {
   if (e.target.classList.contains('resize-handle')) {
