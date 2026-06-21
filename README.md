@@ -1,238 +1,145 @@
 # VAULT // Bunker Command
 
-> A full-stack bunker planning and management system — build your bunker, design its layout, track supplies, and manage your crew. Military-grade dashboard included.
-
-![Docker](https://img.shields.io/badge/Docker-required-2496ED?logo=docker&logoColor=white)
-![Node](https://img.shields.io/badge/Node.js-20_Alpine-339933?logo=node.js&logoColor=white)
-![Nginx](https://img.shields.io/badge/Nginx-Alpine-009639?logo=nginx&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-persisted-003B57?logo=sqlite&logoColor=white)
+> A full-stack bunker planning and management system with user roles, dynamic room layout builder, supply tracking, and a military-industrial command dashboard.
 
 ---
 
-## Prerequisites
-
-Before you begin, make sure you have the following installed:
-
-- **Docker** — [https://docs.docker.com/get-docker](https://docs.docker.com/get-docker/)
-- **Docker Compose** — included with Docker Desktop; or install the [Compose plugin](https://docs.docker.com/compose/install/) on Linux
-
-Verify both are working:
+## 🚀 Quick Start
 
 ```bash
-docker --version
-docker compose version
-```
-
----
-
-## Installation
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/0nionsalt/bunker-app.git
+git clone <your-repo>
 cd bunker-app
-```
 
-### 2. Set up your environment
-
-```bash
+# Copy env config
 cp .env.example .env
-```
 
-Open `.env` and set a strong secret key:
-
-```env
-PORT=7532
-JWT_SECRET=your-secret-key-here
-```
-
-> ⚠️ **Important:** Never use the default `JWT_SECRET` in production.
-
-### 3. Build and start the containers
-
-```bash
+# Start everything
 docker compose up -d --build
+
+# Open in browser
+open http://localhost:8080
 ```
 
-This will:
-- Build the Node.js API image
-- Build the Nginx frontend image
-- Start both containers in the background
-- Create a persistent volume for your database
-
-### 4. Open the app
-
-```
-http://localhost:7532
-```
-
-**Default admin login:**
-
-| Field | Value |
-|---|---|
-| Username | `admin` |
-| Password | `admin123` |
-
-> 🔒 Change the admin password after your first login.
+**Default admin credentials:** `admin` / `admin`
+_(Change these immediately in production)_
 
 ---
 
-## What You Can Do
-
-### Bunker Builder
-Create and name your bunkers, set capacity, and track their status from `planning` through `active` to `sealed`.
-
-### Layout Designer
-Use the interactive 20×15 grid to place rooms — Command Centre, Dormitory, Medical Bay, Armoury, Comms Room, Generator Room, and more. Click any room on the grid to inspect or remove it.
-
-### Supplies Inventory
-Track everything your bunker needs across 7 categories: Food, Water, Medical, Tools, Weapons, Comms, and Other. Set minimum thresholds and see stock health at a glance with colour-coded progress bars.
+## ✨ Features
 
 ### User Roles
-Three levels of access keep things organised:
-
-| Role | What they can do |
+| Role | Capabilities |
 |---|---|
-| **Admin** | Full system access — manage all users, bunkers, and assign roles |
-| **Commander** | Create and manage their own bunkers, invite members |
-| **Member** | View and contribute to bunkers they're part of |
+| **Admin** | Full system access, manage all users & bunkers, assign roles |
+| **Commander** | Create & manage their own bunkers, invite members |
+| **Member** | View and contribute to bunkers they belong to |
 
-### Personnel Management
-Invite other registered users to your bunker by callsign. Admins can promote any user to Commander or Admin from the All Personnel panel.
+### Bunker Management
+- Create multiple bunkers with name, description, and capacity
+- Set status: `planning` → `active` → `sealed`
+- Invite other registered users to your bunker
+
+### Layout Builder (Grid Map)
+- 20×15 interactive grid canvas
+- 12 room types: Command Centre, Dormitory, Kitchen, Medical Bay, Armoury, Storage, Comms, Generator, Water Treatment, Recreation, Vehicle Bay, Airlock
+- Click to place rooms on the grid; click rooms to inspect/remove
+- Add Room modal for precise position and size control
+
+### Supplies Inventory
+- Track items by category: Food, Water, Medical, Tools, Weapons, Comms, Other
+- Set quantity and minimum thresholds — progress bars show stock health
+- Filter by category; edit or remove entries
+
+### Dashboard
+- Live stats: total bunkers, users, supply units, rooms mapped
+- Quick-access bunker cards
+- UTC clock with live heartbeat
 
 ---
 
-## Managing Containers
+## 🗂 Project Structure
 
-```bash
-# View running containers and their status
-docker compose ps
-
-# View live logs
-docker compose logs -f
-
-# View logs for a specific service
-docker compose logs -f api
-docker compose logs -f web
-
-# Stop the app (data is preserved)
-docker compose down
-
-# Stop and wipe all data (destructive!)
-docker compose down -v
-
-# Restart after a config change
-docker compose up -d --build
+```
+bunker-app/
+├── docker-compose.yml          # Service orchestration
+├── .env.example                # Environment template
+├── backend/
+│   ├── Dockerfile
+│   ├── package.json
+│   └── server.js               # Express API + SQLite
+├── frontend/
+│   ├── Dockerfile
+│   └── public/
+│       └── index.html          # Full SPA (single file)
+└── nginx/
+    └── default.conf            # Reverse proxy config
 ```
 
 ---
 
-## Configuration
+## 🐳 Docker Services
 
-All options live in your `.env` file:
+| Service | Image | Port | Purpose |
+|---|---|---|---|
+| `api` | Node 20 Alpine | internal :3001 | REST API + SQLite DB |
+| `web` | Nginx Alpine | :8080 | SPA + API reverse proxy |
+
+Data is persisted in a named Docker volume (`bunker-data`).
+
+---
+
+## 🔧 Configuration
 
 | Variable | Default | Description |
 |---|---|---|
-| `PORT` | `7532` | The port the web UI is served on |
-| `JWT_SECRET` | *(example value)* | Secret used to sign login tokens — **must be changed** |
+| `PORT` | `8080` | External port for the web UI |
+| `JWT_SECRET` | `change-me-in-production-2077` | JWT signing secret — **change this!** |
 
-To change the port, edit `.env` and restart:
+---
 
-```bash
-# .env
-PORT=9090
+## 📡 API Endpoints
+
 ```
-
-```bash
-docker compose up -d --build
+POST   /api/auth/register          Register a new user
+POST   /api/auth/login             Login
+GET    /api/users                  [admin] List all users
+PATCH  /api/users/:id/role         [admin] Change user role
+GET    /api/bunkers                List accessible bunkers
+POST   /api/bunkers                Create a bunker
+PATCH  /api/bunkers/:id            Update bunker details
+DELETE /api/bunkers/:id            Delete a bunker
+GET    /api/bunkers/:id/members    List bunker members
+POST   /api/bunkers/:id/invite     Invite a user to bunker
+GET    /api/bunkers/:id/rooms      Get rooms in layout
+POST   /api/bunkers/:id/rooms      Add a room
+PATCH  /api/rooms/:id              Update room position/size
+DELETE /api/rooms/:id              Remove a room
+GET    /api/bunkers/:id/supplies   List supplies
+POST   /api/bunkers/:id/supplies   Add a supply item
+PATCH  /api/supplies/:id           Update supply
+DELETE /api/supplies/:id           Delete supply
+GET    /api/stats                  System-wide stats
 ```
 
 ---
 
-## Data & Persistence
+## 🔒 Security Notes
 
-Your bunker data is stored in a named Docker volume called `bunker-data`. It survives container restarts and rebuilds automatically.
-
-To back up your database:
-
-```bash
-docker run --rm \
-  -v bunker-app_bunker-data:/data \
-  -v $(pwd):/backup \
-  alpine tar czf /backup/bunker-backup.tar.gz /data
-```
-
-To restore from a backup:
-
-```bash
-docker run --rm \
-  -v bunker-app_bunker-data:/data \
-  -v $(pwd):/backup \
-  alpine tar xzf /backup/bunker-backup.tar.gz -C /
-```
+- Change `JWT_SECRET` before any public deployment
+- Consider adding HTTPS via a reverse proxy (Traefik, Caddy)
+- The default admin password should be changed on first login
+- For production, consider replacing SQLite with PostgreSQL
 
 ---
 
-## Services
+## 🛠 Development
 
-| Container | Base Image | Internal Port | Role |
-|---|---|---|---|
-| `bunker-api` | Node 20 Alpine | 3001 | REST API + SQLite database |
-| `bunker-web` | Nginx Alpine | 80 → **7532** | SPA frontend + API proxy |
-
-The frontend container proxies all `/api/` requests to the API container internally — no CORS issues, no exposed API port.
-
----
-
-## Troubleshooting
-
-**App won't start / port already in use**
-
-Change the port in `.env` and restart, or find what's using port 8080:
+To run the API locally without Docker:
 
 ```bash
-lsof -i :7532
+cd backend
+npm install
+node server.js
 ```
 
-**`docker compose` command not found**
-
-Try the older syntax `docker-compose` (with a hyphen), or install the [Compose plugin](https://docs.docker.com/compose/install/).
-
-**API container keeps restarting**
-
-Check the logs:
-
-```bash
-docker compose logs api
-```
-
-**Lost admin password**
-
-Exec into the API container and reset it manually:
-
-```bash
-docker exec -it bunker-api sh
-node -e "
-const db = require('better-sqlite3')('/data/bunker.db');
-const bcrypt = require('bcryptjs');
-db.prepare('UPDATE users SET password=? WHERE username=?').run(bcrypt.hashSync('newpassword', 10), 'admin');
-console.log('done');
-"
-```
-
----
-
-## Security Checklist for Production
-
-- [ ] Set a strong, unique `JWT_SECRET` in `.env`
-- [ ] Change the default `admin` password on first login
-- [ ] Put the app behind a reverse proxy (Caddy, Traefik, or Nginx) with HTTPS
-- [ ] Restrict Docker socket access
-- [ ] Schedule regular database backups
-
----
-
-## License
-
-MIT — do what you want, survive accordingly.
+The frontend is a single HTML file — open it in any browser or serve via any static server.

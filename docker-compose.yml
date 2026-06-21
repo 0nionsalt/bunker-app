@@ -15,11 +15,11 @@ services:
     networks:
       - bunker-net
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/api/stats"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD-SHELL", "node -e \"const h=require('http');h.get('http://localhost:3001/health',r=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
       retries: 3
-      start_period: 10s
+      start_period: 5s
 
   # ─── Frontend (Nginx + static SPA) ─────────────────────────────────────────
   web:
@@ -35,6 +35,30 @@ services:
         condition: service_healthy
     networks:
       - bunker-net
+
+  # ─── Startup Banner ─────────────────────────────────────────────────────────
+  banner:
+    image: alpine
+    container_name: bunker-banner
+    depends_on:
+      web:
+        condition: service_started
+    networks:
+      - bunker-net
+    entrypoint: >
+      sh -c "
+        echo '';
+        echo '╔══════════════════════════════════════════════╗';
+        echo '║         VAULT // BUNKER COMMAND              ║';
+        echo '║         System online and ready.             ║';
+        echo '╠══════════════════════════════════════════════╣';
+        echo '║  App URL  →  http://localhost:${PORT:-7532}  ║';
+        echo '║  Username →  admin                           ║';
+        echo '║  Password →  admin                           ║';
+        echo '╚══════════════════════════════════════════════╝';
+        echo '';
+      "
+    restart: "no"
 
 volumes:
   bunker-data:

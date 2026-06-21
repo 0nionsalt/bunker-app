@@ -76,9 +76,9 @@ db.exec(`
 // Seed admin user
 const admin = db.prepare('SELECT id FROM users WHERE username = ?').get('admin');
 if (!admin) {
-  const hash = bcrypt.hashSync('admin123', 10);
+  const hash = bcrypt.hashSync('admin', 10);
   db.prepare('INSERT INTO users (id, username, password, role) VALUES (?, ?, ?, ?)').run(uuidv4(), 'admin', hash, 'admin');
-  console.log('Admin seeded: admin / admin123');
+  console.log('Admin seeded: admin / admin');
 }
 
 // ─── MIDDLEWARE ─────────────────────────────────────────────────────────────
@@ -256,6 +256,9 @@ app.delete('/api/supplies/:id', auth, (req, res) => {
   db.prepare('DELETE FROM supplies WHERE id = ?').run(req.params.id);
   res.json({ success: true });
 });
+
+// ─── HEALTH (public, for Docker healthcheck) ─────────────────────────────────
+app.get("/health", (req, res) => res.json({ status: "ok" }));
 
 // ─── STATS ───────────────────────────────────────────────────────────────────
 app.get('/api/stats', auth, (req, res) => {
