@@ -622,6 +622,63 @@
   .corner-deco.bl { bottom: 0; left: 0; border-width: 0 0 2px 2px; }
   .corner-deco.br { bottom: 0; right: 0; border-width: 0 2px 2px 0; }
 
+  /* ── RSS FEEDS ── */
+  .rss-feed-item {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 12px;
+    margin-bottom: 8px;
+    border-radius: var(--radius);
+  }
+  .rss-feed-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .rss-feed-name {
+    font-family: var(--font-head);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--white);
+  }
+  .rss-feed-url {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text2);
+    margin-bottom: 8px;
+    word-break: break-all;
+  }
+  .rss-feed-items {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+  .rss-item {
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .rss-item:last-child {
+    border-bottom: none;
+  }
+  .rss-item-title {
+    font-size: 12px;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .rss-item-title a {
+    color: var(--acid);
+    text-decoration: none;
+  }
+  .rss-item-title a:hover {
+    text-decoration: underline;
+  }
+  .rss-item-meta {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--muted);
+  }
+
   @media (max-width: 900px) {
     .stats-grid { grid-template-columns: 1fr 1fr; }
     .builder-container { flex-direction: column; }
@@ -754,6 +811,15 @@
         </div>
         <div class="panel-body" id="dash-bunkers">
           <div class="empty-state"><div class="icon">⬡</div>No bunkers yet</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">📡 RSS Feeds</div>
+          <button class="btn btn-primary btn-sm" onclick="openAddRSS()">+ ADD FEED</button>
+        </div>
+        <div class="panel-body" id="dash-rss">
+          <div class="empty-state"><div class="icon">📡</div>No RSS feeds configured</div>
         </div>
       </div>
     </div>
@@ -940,6 +1006,47 @@
   </div>
 </div>
 
+<!-- Edit Room -->
+<div class="modal-overlay" id="modal-edit-room">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Edit Room</div>
+      <button class="modal-close" onclick="closeModal('modal-edit-room')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="er-id" />
+      <div class="form-group"><label>Room Name</label><input id="er-name" placeholder="e.g. Command Centre" /></div>
+      <div class="form-group">
+        <label>Room Type</label>
+        <select id="er-type">
+          <option value="command">Command Centre</option>
+          <option value="dormitory">Dormitory</option>
+          <option value="kitchen">Kitchen / Mess</option>
+          <option value="medical">Medical Bay</option>
+          <option value="armory">Armoury</option>
+          <option value="storage">Storage</option>
+          <option value="comms">Comms Room</option>
+          <option value="generator">Generator Room</option>
+          <option value="water">Water Treatment</option>
+          <option value="rec">Recreation</option>
+          <option value="garage">Vehicle Bay</option>
+          <option value="airlock">Airlock</option>
+        </select>
+      </div>
+      <div class="grid-2">
+        <div class="form-group"><label>Grid X</label><input id="er-x" type="number" value="0" min="0" max="18" /></div>
+        <div class="form-group"><label>Grid Y</label><input id="er-y" type="number" value="0" min="0" max="13" /></div>
+        <div class="form-group"><label>Width (cells)</label><input id="er-w" type="number" value="3" min="1" max="10" /></div>
+        <div class="form-group"><label>Height (cells)</label><input id="er-h" type="number" value="2" min="1" max="8" /></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-edit-room')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveRoomEdit()">SAVE CHANGES</button>
+    </div>
+  </div>
+</div>
+
 <!-- Add Supply -->
 <div class="modal-overlay" id="modal-add-supply">
   <div class="modal">
@@ -1024,6 +1131,25 @@
   </div>
 </div>
 
+<!-- Add RSS Feed -->
+<div class="modal-overlay" id="modal-add-rss">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add RSS Feed</div>
+      <button class="modal-close" onclick="closeModal('modal-add-rss')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Feed Name</label><input id="rss-name" placeholder="e.g. BBC News" /></div>
+      <div class="form-group"><label>RSS URL</label><input id="rss-url" placeholder="https://example.com/feed.xml" /></div>
+      <div id="rss-error" class="alert alert-error" style="display:none"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-rss')">Cancel</button>
+      <button class="btn btn-primary" onclick="addRSSFeed()">ADD FEED</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════ STATE ═══════════════════════
 const API = '/api';
@@ -1033,6 +1159,7 @@ let currentBunker = null;
 let allBunkers = [];
 let allRooms = [];
 let allSupplies = [];
+let allRSSFeeds = [];
 let selectedRoomType = 'dormitory';
 
 // ═══════════════════════ INIT ═══════════════════════
@@ -1113,6 +1240,7 @@ function initApp() {
   }
   loadStats();
   loadBunkers();
+  loadRSSFeeds();
   buildRoomTypeList();
 }
 
@@ -1327,6 +1455,9 @@ function showRoomInfo(room) {
       <div style="font-family:var(--font-head);font-size:16px;font-weight:700;color:var(--white)">${room.name}</div>
     </div>
     <div class="text-muted mb-12">Position: ${room.x}, ${room.y} — Size: ${room.width}×${room.height}</div>
+    <div class="flex-row" style="margin-bottom:8px">
+      <button class="btn btn-ghost btn-sm w-full" onclick="openEditRoom(${JSON.stringify(room).replace(/"/g,'&quot;')})">✎ EDIT</button>
+    </div>
     <button class="btn btn-danger btn-sm w-full" onclick="deleteRoom('${room.id}')">✕ REMOVE ROOM</button>
   `;
 }
@@ -1355,6 +1486,34 @@ async function addRoom() {
   });
   closeModal('modal-add-room');
   loadRooms();
+}
+
+function openEditRoom(room) {
+  document.getElementById('er-id').value = room.id;
+  document.getElementById('er-name').value = room.name;
+  document.getElementById('er-type').value = room.type;
+  document.getElementById('er-x').value = room.x;
+  document.getElementById('er-y').value = room.y;
+  document.getElementById('er-w').value = room.width;
+  document.getElementById('er-h').value = room.height;
+  openModal('modal-edit-room');
+}
+
+async function saveRoomEdit() {
+  const id = document.getElementById('er-id').value;
+  const name = document.getElementById('er-name').value.trim();
+  const type = document.getElementById('er-type').value;
+  const x = parseInt(document.getElementById('er-x').value) || 0;
+  const y = parseInt(document.getElementById('er-y').value) || 0;
+  const width = parseInt(document.getElementById('er-w').value) || 2;
+  const height = parseInt(document.getElementById('er-h').value) || 2;
+  await api('/rooms/' + id, {
+    method: 'PATCH',
+    body: JSON.stringify({ name, type, x, y, width, height, color: ROOM_TYPES[type].color })
+  });
+  closeModal('modal-edit-room');
+  loadRooms();
+  document.getElementById('selected-room-info').innerHTML = '<div class="text-muted">Click a room to select</div>';
 }
 
 // ═══════════════════════ SUPPLIES ═══════════════════════
@@ -1487,6 +1646,89 @@ async function loadUsers() {
 async function setUserRole(id, role) {
   await api('/users/' + id + '/role', { method:'PATCH', body: JSON.stringify({ role }) });
   loadUsers();
+}
+
+// ═══════════════════════ RSS FEEDS ═══════════════════════
+async function loadRSSFeeds() {
+  try {
+    allRSSFeeds = await api('/rss-feeds');
+    renderRSSFeeds();
+  } catch (e) {
+    console.error('Failed to load RSS feeds:', e);
+  }
+}
+
+async function renderRSSFeeds() {
+  const container = document.getElementById('dash-rss');
+  if (!allRSSFeeds || allRSSFeeds.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📡</div>No RSS feeds configured</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+  for (const feed of allRSSFeeds) {
+    const feedEl = document.createElement('div');
+    feedEl.className = 'rss-feed-item';
+    feedEl.innerHTML = `
+      <div class="rss-feed-header">
+        <div class="rss-feed-name">${feed.name}</div>
+        <button class="btn btn-ghost btn-sm" onclick="deleteRSSFeed('${feed.id}')">✕</button>
+      </div>
+      <div class="rss-feed-url">${feed.url}</div>
+      <div class="rss-feed-items" id="rss-items-${feed.id}">
+        <div class="text-muted" style="font-size:11px">Loading feed...</div>
+      </div>
+    `;
+    container.appendChild(feedEl);
+    
+    // Fetch feed items
+    try {
+      const data = await api(`/rss-feeds/${feed.id}/fetch`);
+      const itemsContainer = document.getElementById(`rss-items-${feed.id}`);
+      if (data.items && data.items.length > 0) {
+        itemsContainer.innerHTML = data.items.map(item => `
+          <div class="rss-item">
+            <div class="rss-item-title"><a href="${item.link}" target="_blank">${item.title}</a></div>
+            <div class="rss-item-meta">${item.pubDate ? new Date(item.pubDate).toLocaleDateString() : ''}</div>
+          </div>
+        `).join('');
+      } else {
+        itemsContainer.innerHTML = '<div class="text-muted" style="font-size:11px">No items available</div>';
+      }
+    } catch (e) {
+      const itemsContainer = document.getElementById(`rss-items-${feed.id}`);
+      itemsContainer.innerHTML = '<div class="text-muted" style="font-size:11px">Failed to load feed items</div>';
+    }
+  }
+}
+
+function openAddRSS() {
+  document.getElementById('rss-name').value = '';
+  document.getElementById('rss-url').value = '';
+  document.getElementById('rss-error').style.display = 'none';
+  openModal('modal-add-rss');
+}
+
+async function addRSSFeed() {
+  const name = document.getElementById('rss-name').value.trim();
+  const url = document.getElementById('rss-url').value.trim();
+  if (!name || !url) return;
+  
+  try {
+    await api('/rss-feeds', { method:'POST', body: JSON.stringify({ name, url }) });
+    closeModal('modal-add-rss');
+    loadRSSFeeds();
+  } catch (e) {
+    const errorEl = document.getElementById('rss-error');
+    errorEl.textContent = 'Failed to add RSS feed: ' + (e.message || 'Invalid URL');
+    errorEl.style.display = '';
+  }
+}
+
+async function deleteRSSFeed(id) {
+  if (!confirm('Remove this RSS feed?')) return;
+  await api('/rss-feeds/' + id, { method: 'DELETE' });
+  loadRSSFeeds();
 }
 
 // ═══════════════════════ MODALS ═══════════════════════

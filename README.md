@@ -141,12 +141,12 @@ node server.js
 
 ---
 
-## 🛠 Uninstallment
+## 🛠 Uninstallation
 
-To uninstall entirety of the bunker-app
+To completely remove the application and all its data:
 
 ```bash
-soon
+docker compose down -v && cd .. && rm -rf bunker-app
 ```
 
 The frontend is a single HTML file — open it in any browser or serve via any static server.

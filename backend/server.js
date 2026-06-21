@@ -4,11 +4,13 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const Database = require('better-sqlite3');
+const Parser = require('rss-parser');
 
 const app = express();
 const PORT = 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'bunker-secret-2077';
 const db = new Database('/data/bunker.db');
+const parser = new Parser();
 
 app.use(cors());
 app.use(express.json());
@@ -70,6 +72,15 @@ db.exec(`
     added_by TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (bunker_id) REFERENCES bunkers(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS rss_feeds (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
   );
 `);
 
@@ -255,6 +266,57 @@ app.patch('/api/supplies/:id', auth, (req, res) => {
 app.delete('/api/supplies/:id', auth, (req, res) => {
   db.prepare('DELETE FROM supplies WHERE id = ?').run(req.params.id);
   res.json({ success: true });
+});
+
+// ─── RSS FEEDS ────────────────────────────────────────────────────────────────
+app.get('/api/rss-feeds', auth, (req, res) => {
+  const feeds = db.prepare('SELECT * FROM rss_feeds WHERE user_id = ? ORDER BY created_at DESC').all(req.user.id);
+  res.json(feeds);
+});
+
+app.post('/api/rss-feeds', auth, async (req, res) => {
+  const { name, url } = req.body;
+  if (!name || !url) return res.status(400).json({ error: 'Name and URL required' });
+  
+  try {
+    // Validate RSS feed
+    await parser.parseURL(url);
+    
+    const id = uuidv4();
+    db.prepare('INSERT INTO rss_feeds (id, user_id, name, url) VALUES (?, ?, ?, ?)').run(id, req.user.id, name, url);
+    res.json({ id, name, url, user_id: req.user.id });
+  } catch (e) {
+    res.status(400).json({ error: 'Invalid RSS feed URL' });
+  }
+});
+
+app.delete('/api/rss-feeds/:id', auth, (req, res) => {
+  const feed = db.prepare('SELECT * FROM rss_feeds WHERE id = ?').get(req.params.id);
+  if (!feed) return res.status(404).json({ error: 'Not found' });
+  if (feed.user_id !== req.user.id && req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+  db.prepare('DELETE FROM rss_feeds WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+});
+
+app.get('/api/rss-feeds/:id/fetch', auth, async (req, res) => {
+  const feed = db.prepare('SELECT * FROM rss_feeds WHERE id = ?').get(req.params.id);
+  if (!feed) return res.status(404).json({ error: 'Not found' });
+  if (feed.user_id !== req.user.id && req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+  
+  try {
+    const parsed = await parser.parseURL(feed.url);
+    res.json({ 
+      title: parsed.title, 
+      items: parsed.items.slice(0, 10).map(item => ({
+        title: item.title,
+        link: item.link,
+        pubDate: item.pubDate,
+        content: item.contentSnippet
+      }))
+    });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to fetch RSS feed' });
+  }
 });
 
 // ─── HEALTH (public, for Docker healthcheck) ─────────────────────────────────
