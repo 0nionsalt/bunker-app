@@ -14,7 +14,7 @@ cd bunker-app
 docker compose up -d --build
 
 # Open in browser
-open http://localhost:8080
+Let's get cracking! http://localhost:7532
 ```
 
 **Default admin credentials:** `admin` / `admin`
