@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <link rel="icon" type="image/x-icon" href="images/favicon.ico" />
 <title>VAULT // Bunker Command</title>
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap');
 
@@ -939,9 +940,6 @@
         <span class="nav-icon">⬡</span> My Bunkers
       </div>
       <div class="nav-section">Bunker</div>
-      <div class="nav-item" onclick="showPage('layout')" id="nav-layout" style="display:none">
-        <span class="nav-icon">▦</span> Layout
-      </div>
       <div class="nav-item" onclick="showPage('supplies')" id="nav-supplies" style="display:none">
         <span class="nav-icon">◻</span> Supplies
       </div>
@@ -1023,7 +1021,10 @@
     <div class="page" id="page-bunkers">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <div class="panel-title" style="font-size:18px">⬡ Registered Bunkers</div>
-        <button class="btn btn-primary btn-sm" onclick="openCreateBunker()">+ NEW BUNKER</button>
+        <div class="flex-row">
+          <button class="btn btn-ghost btn-sm" onclick="openScannerForField('cb-name')">📷 SCAN</button>
+          <button class="btn btn-primary btn-sm" onclick="openCreateBunker()">+ NEW BUNKER</button>
+        </div>
       </div>
       <div class="bunker-grid" id="bunker-list">
         <div class="empty-state" style="grid-column:1/-1"><div class="icon">⬡</div>No bunkers registered</div>
@@ -1106,7 +1107,10 @@
           <div class="panel-title" style="font-size:18px">◻ SUPPLIES</div>
           <div class="text-muted" id="supplies-bunker-name"></div>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="openAddSupply()">+ ADD SUPPLY</button>
+        <div class="flex-row">
+          <button class="btn btn-ghost btn-sm" onclick="openScanner()">📷 SCAN</button>
+          <button class="btn btn-primary btn-sm" onclick="openAddSupply()">+ ADD SUPPLY</button>
+        </div>
       </div>
       <div class="panel">
         <div class="panel-header">
@@ -1178,7 +1182,13 @@
       <button class="modal-close" onclick="closeModal('modal-create-bunker')">✕</button>
     </div>
     <div class="modal-body">
-      <div class="form-group"><label>Bunker Name</label><input id="cb-name" placeholder="e.g. DELTA-7 VAULT" /></div>
+      <div class="form-group">
+        <label>Bunker Name</label>
+        <div class="flex-row">
+          <input id="cb-name" placeholder="e.g. DELTA-7 VAULT" style="flex:1" />
+          <button class="btn btn-ghost btn-sm" onclick="openScannerForField('cb-name')">📷</button>
+        </div>
+      </div>
       <div class="form-group"><label>Description</label><textarea id="cb-desc" rows="3" placeholder="Brief description..."></textarea></div>
       <div class="form-group"><label>Capacity (persons)</label><input id="cb-cap" type="number" value="10" min="1" max="500" /></div>
       <div id="cb-error" class="alert alert-error" style="display:none"></div>
@@ -1279,7 +1289,13 @@
       <button class="modal-close" onclick="closeModal('modal-add-supply')">✕</button>
     </div>
     <div class="modal-body">
-      <div class="form-group"><label>Item Name</label><input id="as-name" placeholder="e.g. Canned Beans" /></div>
+      <div class="form-group">
+        <label>Item Name</label>
+        <div class="flex-row">
+          <input id="as-name" placeholder="e.g. Canned Beans" style="flex:1" />
+          <button class="btn btn-ghost btn-sm" onclick="openScannerForField('as-name')">📷</button>
+        </div>
+      </div>
       <div class="form-group">
         <label>Category</label>
         <select id="as-cat">
@@ -1314,7 +1330,13 @@
     </div>
     <div class="modal-body">
       <input type="hidden" id="es-id" />
-      <div class="form-group"><label>Item Name</label><input id="es-name" /></div>
+      <div class="form-group">
+        <label>Item Name</label>
+        <div class="flex-row">
+          <input id="es-name" style="flex:1" />
+          <button class="btn btn-ghost btn-sm" onclick="openScannerForField('es-name')">📷</button>
+        </div>
+      </div>
       <div class="form-group">
         <label>Category</label>
         <select id="es-cat">
@@ -1374,6 +1396,33 @@
   </div>
 </div>
 
+<!-- Barcode/QR Scanner -->
+<div class="modal-overlay" id="modal-scanner">
+  <div class="modal" style="width: 500px">
+    <div class="modal-header">
+      <div class="modal-title">📷 Scan Barcode/QR Code</div>
+      <button class="modal-close" onclick="closeScanner()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="reader" style="width: 100%; min-height: 300px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);"></div>
+      <div id="scan-result" style="margin-top: 16px; display: none;">
+        <div class="alert alert-success">
+          <div style="font-weight: 700; margin-bottom: 4px;">Scanned:</div>
+          <div id="scanned-code" style="font-family: var(--font-mono); word-break: break-all;"></div>
+        </div>
+        <div class="flex-row" style="margin-top: 12px;">
+          <button class="btn btn-primary" onclick="useScannedCode()">USE THIS CODE</button>
+          <button class="btn btn-ghost" onclick="resetScanner()">SCAN AGAIN</button>
+        </div>
+      </div>
+      <div id="scan-error" class="alert alert-error" style="display: none; margin-top: 12px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeScanner()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════ STATE ═══════════════════════
 const API = '/api';
@@ -1399,6 +1448,9 @@ let initialRoomH = 0;
 let contextMenuRoom = null;
 let deleteMode = false;
 let selectedRoomsForDelete = new Set();
+let html5QrCode = null;
+let scannedCodeValue = null;
+let targetFieldId = null;
 
 // ═══════════════════════ INIT ═══════════════════════
 window.onload = () => {
@@ -1542,11 +1594,10 @@ function showPage(name) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   document.getElementById('nav-' + name)?.classList.add('active');
-  const titles = { dashboard:'DASHBOARD', bunkers:'MY BUNKERS', layout:'LAYOUT BUILDER', supplies:'SUPPLIES', members:'PERSONNEL', users:'ALL PERSONNEL' };
+  const titles = { dashboard:'DASHBOARD', bunkers:'MY BUNKERS', supplies:'SUPPLIES', members:'PERSONNEL', users:'ALL PERSONNEL' };
   document.getElementById('topbar-title').textContent = titles[name] || name.toUpperCase();
   if (name === 'dashboard') { loadStats(); loadBunkers(); }
   if (name === 'bunkers') loadBunkers();
-  if (name === 'layout' && currentBunker) loadRooms();
   if (name === 'supplies' && currentBunker) loadSupplies();
   if (name === 'members' && currentBunker) loadMembers();
   if (name === 'users') loadUsers();
@@ -1561,13 +1612,11 @@ function showPage(name) {
 
 function selectBunker(b) {
   currentBunker = b;
-  document.getElementById('nav-layout').style.display = '';
   document.getElementById('nav-supplies').style.display = '';
   document.getElementById('nav-members').style.display = '';
-  document.getElementById('layout-bunker-name').textContent = b.name;
   document.getElementById('supplies-bunker-name').textContent = b.name;
   document.getElementById('members-bunker-name').textContent = b.name;
-  showPage('layout');
+  showPage('supplies');
 }
 
 // ═══════════════════════ DASHBOARD ═══════════════════════
@@ -2309,6 +2358,75 @@ async function deleteRSSFeed(id) {
   if (!confirm('Remove this RSS feed?')) return;
   await api('/rss-feeds/' + id, { method: 'DELETE' });
   loadRSSFeeds();
+}
+
+// ═══════════════════════ BARCODE/QR SCANNER ═══════════════════════
+function openScanner() {
+  document.getElementById('scan-result').style.display = 'none';
+  document.getElementById('scan-error').style.display = 'none';
+  document.getElementById('reader').innerHTML = '';
+  openModal('modal-scanner');
+  startScanner();
+}
+
+function closeScanner() {
+  stopScanner();
+  closeModal('modal-scanner');
+}
+
+async function startScanner() {
+  try {
+    html5QrCode = new Html5Qrcode("reader");
+    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+    await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
+  } catch (err) {
+    console.error('Error starting scanner:', err);
+    const errorEl = document.getElementById('scan-error');
+    errorEl.textContent = 'Failed to start camera. Please ensure camera permissions are granted.';
+    errorEl.style.display = '';
+  }
+}
+
+function onScanSuccess(decodedText, decodedResult) {
+  scannedCodeValue = decodedText;
+  stopScanner();
+  document.getElementById('reader').innerHTML = '';
+  document.getElementById('scanned-code').textContent = decodedText;
+  document.getElementById('scan-result').style.display = '';
+}
+
+function stopScanner() {
+  if (html5QrCode) {
+    html5QrCode.stop().then(() => {
+      html5QrCode.clear();
+      html5QrCode = null;
+    }).catch(err => {
+      console.error('Failed to stop scanner:', err);
+    });
+  }
+}
+
+function resetScanner() {
+  document.getElementById('scan-result').style.display = 'none';
+  document.getElementById('scan-error').style.display = 'none';
+  startScanner();
+}
+
+function useScannedCode() {
+  if (!scannedCodeValue) return;
+  closeScanner();
+  if (targetFieldId) {
+    document.getElementById(targetFieldId).value = scannedCodeValue;
+    targetFieldId = null;
+  } else {
+    openAddSupply();
+    document.getElementById('as-name').value = scannedCodeValue;
+  }
+}
+
+function openScannerForField(fieldId) {
+  targetFieldId = fieldId;
+  openScanner();
 }
 
 // ═══════════════════════ MODALS ═══════════════════════
