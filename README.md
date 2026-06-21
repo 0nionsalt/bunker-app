@@ -10,9 +10,6 @@
 git clone https://github.com/0nionsalt/bunker-app.git
 cd bunker-app
 
-# Copy env config
-cp .env.example .env
-
 # Start everything
 docker compose up -d --build
 
