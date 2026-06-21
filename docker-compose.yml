@@ -1,0 +1,45 @@
+services:
+
+  # ─── API (Node/Express + SQLite) ───────────────────────────────────────────
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bunker-api
+    restart: unless-stopped
+    environment:
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production-2077}
+      - NODE_ENV=production
+    volumes:
+      - bunker-data:/data
+    networks:
+      - bunker-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/api/stats"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ─── Frontend (Nginx + static SPA) ─────────────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: bunker-web
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - bunker-net
+
+volumes:
+  bunker-data:
+    driver: local
+
+networks:
+  bunker-net:
+    driver: bridge
