@@ -6,6 +6,7 @@
 <link rel="icon" type="image/x-icon" href="images/favicon.ico" />
 <title>VAULT // Bunker Command</title>
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap');
 
@@ -949,9 +950,6 @@
       <div class="nav-item" onclick="showPage('alerts')" id="nav-alerts" style="display:none">
         <span class="nav-icon">🔔</span> Alerts
       </div>
-      <div class="nav-item" onclick="showPage('members')" id="nav-members" style="display:none">
-        <span class="nav-icon">◈</span> Members
-      </div>
       <div class="nav-item" onclick="showPage('roster')" id="nav-roster" style="display:none">
         <span class="nav-icon">◷</span> Duty Roster
       </div>
@@ -1215,25 +1213,6 @@
       </div>
     </div>
 
-    <!-- BUNKER DETAIL: MEMBERS -->
-    <div class="page" id="page-members">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-        <div>
-          <div class="panel-title" style="font-size:18px">◈ PERSONNEL</div>
-          <div class="text-muted" id="members-bunker-name"></div>
-        </div>
-        <button class="btn btn-ghost btn-sm" onclick="openInvite()">+ INVITE</button>
-      </div>
-      <div class="panel">
-        <div class="panel-body" style="padding:0">
-          <table class="users-table">
-            <thead><tr><th>Callsign</th><th>System Role</th><th>Bunker Role</th><th>Joined</th></tr></thead>
-            <tbody id="members-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
     <!-- ADMIN: USERS -->
     <div class="page" id="page-users">
       <div class="panel-title" style="font-size:18px;margin-bottom:16px">◈ ALL PERSONNEL (ADMIN)</div>
@@ -1378,6 +1357,30 @@
           </div>
           <div class="text-muted" style="margin-top:12px" id="air-last-updated"></div>
           <button class="btn btn-primary mt-8" onclick="saveAir()">SAVE AIR STATUS</button>
+        </div>
+      </div>
+
+      <!-- System Charts -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">📊 System Overview</div>
+        </div>
+        <div class="panel-body">
+          <div class="grid-2">
+            <div>
+              <div class="text-muted mb-8" style="font-size:12px">Power Status</div>
+              <canvas id="power-chart" style="max-height:200px"></canvas>
+            </div>
+            <div>
+              <div class="text-muted mb-8" style="font-size:12px">Water Storage</div>
+              <canvas id="water-chart" style="max-height:200px"></canvas>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div>
+            <div class="text-muted mb-8" style="font-size:12px">Air Quality</div>
+            <canvas id="air-chart" style="max-height:200px"></canvas>
+          </div>
         </div>
       </div>
     </div>
@@ -1679,24 +1682,6 @@
   </div>
 </div>
 
-<!-- Invite -->
-<div class="modal-overlay" id="modal-invite">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">Invite Personnel</div>
-      <button class="modal-close" onclick="closeModal('modal-invite')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group"><label>Username / Callsign</label><input id="inv-user" placeholder="exact callsign" /></div>
-      <div id="inv-result" style="margin-top:8px"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-invite')">Cancel</button>
-      <button class="btn btn-primary" onclick="inviteMember()">SEND INVITE</button>
-    </div>
-  </div>
-</div>
-
 <!-- Add RSS Feed -->
 <div class="modal-overlay" id="modal-add-rss">
   <div class="modal">
@@ -1787,6 +1772,18 @@
           <div class="flex-row">
             <button class="btn btn-primary btn-sm" id="settings-enable-push" onclick="enablePushNotifications()" style="display:none">ENABLE</button>
             <button class="btn btn-danger btn-sm" id="settings-disable-push" onclick="disablePushNotifications()" style="display:none">DISABLE</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel" style="margin-bottom:16px">
+        <div class="panel-header">
+          <div class="panel-title">💬 Discord Webhook</div>
+        </div>
+        <div class="panel-body">
+          <div class="form-group">
+            <label>Discord Webhook URL</label>
+            <input id="settings-discord-webhook" type="text" placeholder="https://discord.com/api/webhooks/..." />
+            <div class="text-muted" style="font-size:11px;margin-top:4px">Send push notifications and inventory alerts to Discord</div>
           </div>
         </div>
       </div>
@@ -2014,14 +2011,13 @@ function showPage(name) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   document.getElementById('nav-' + name)?.classList.add('active');
-  const titles = { dashboard:'DASHBOARD', bunkers:'MY BUNKERS', supplies:'SUPPLIES', trends:'SUPPLY TRENDS', alerts:'INVENTORY ALERTS', members:'PERSONNEL', users:'ALL PERSONNEL', roster:'DUTY ROSTER', systems:'SYSTEMS', calculator:'RESOURCE CALCULATOR', notifications:'PUSH NOTIFICATIONS' };
+  const titles = { dashboard:'DASHBOARD', bunkers:'MY BUNKERS', supplies:'SUPPLIES', trends:'SUPPLY TRENDS', alerts:'INVENTORY ALERTS', users:'ALL PERSONNEL', roster:'DUTY ROSTER', systems:'SYSTEMS', calculator:'RESOURCE CALCULATOR', notifications:'PUSH NOTIFICATIONS' };
   document.getElementById('topbar-title').textContent = titles[name] || name.toUpperCase();
   if (name === 'dashboard') { loadStats(); loadBunkers(); }
   if (name === 'bunkers') loadBunkers();
   if (name === 'supplies' && currentBunker) loadSupplies();
   if (name === 'trends' && currentBunker) loadSupplyTrends();
   if (name === 'alerts' && currentBunker) loadAlerts();
-  if (name === 'members' && currentBunker) loadMembers();
   if (name === 'users') loadUsers();
   if (name === 'roster' && currentBunker) loadRoster();
   if (name === 'systems' && currentBunker) { loadPower(); loadWater(); loadAir(); }
@@ -2041,14 +2037,12 @@ function selectBunker(b) {
   document.getElementById('nav-supplies').style.display = '';
   document.getElementById('nav-trends').style.display = '';
   document.getElementById('nav-alerts').style.display = '';
-  document.getElementById('nav-members').style.display = '';
   document.getElementById('nav-roster').style.display = '';
   document.getElementById('nav-systems').style.display = '';
   document.getElementById('nav-calculator').style.display = '';
   document.getElementById('supplies-bunker-name').textContent = b.name;
   document.getElementById('trends-bunker-name').textContent = b.name;
   document.getElementById('alerts-bunker-name').textContent = b.name;
-  document.getElementById('members-bunker-name').textContent = b.name;
   document.getElementById('roster-bunker-name').textContent = b.name;
   document.getElementById('systems-bunker-name').textContent = b.name;
   document.getElementById('calc-bunker-name').textContent = b.name;
@@ -2780,38 +2774,6 @@ async function resolveAlert(id) {
   }
 }
 
-// ═══════════════════════ MEMBERS ═══════════════════════
-async function loadMembers() {
-  const members = await api(`/bunkers/${currentBunker.id}/members`);
-  const tbody = document.getElementById('members-tbody');
-  tbody.innerHTML = members.map(m => `
-    <tr>
-      <td style="font-family:var(--font-head);font-weight:700">${m.username}</td>
-      <td><span class="tag role-${m.system_role}">${m.system_role}</span></td>
-      <td><span class="tag">${m.bunker_role}</span></td>
-      <td class="text-muted">${m.joined_at?.slice(0,10) || '—'}</td>
-    </tr>
-  `).join('');
-}
-
-function openInvite() {
-  document.getElementById('inv-user').value = '';
-  document.getElementById('inv-result').innerHTML = '';
-  openModal('modal-invite');
-}
-
-async function inviteMember() {
-  const username = document.getElementById('inv-user').value.trim();
-  if (!username) return;
-  const r = await api(`/bunkers/${currentBunker.id}/invite`, { method:'POST', body: JSON.stringify({ username }) });
-  if (r.success) {
-    document.getElementById('inv-result').innerHTML = '<div class="alert alert-success">Personnel added to bunker.</div>';
-    loadMembers();
-  } else {
-    document.getElementById('inv-result').innerHTML = `<div class="alert alert-error">${r.error}</div>`;
-  }
-}
-
 // ═══════════════════════ USERS (ADMIN) ═══════════════════════
 async function loadUsers() {
   const users = await api('/users');
@@ -3066,6 +3028,8 @@ async function deleteRoster(id) {
 }
 
 // ═══════════════════════ POWER MANAGEMENT ═══════════════════════
+let powerChart, waterChart, airChart;
+
 async function loadPower() {
   if (!currentBunker) return;
   try {
@@ -3075,9 +3039,65 @@ async function loadPower() {
     document.getElementById('power-battery').value = power.battery_level || 100;
     document.getElementById('power-consumption').value = power.power_consumption || 0;
     document.getElementById('power-last-updated').textContent = 'Last updated: ' + (power.last_updated || 'Never');
+    
+    updatePowerChart(power);
   } catch (e) {
     console.error('Failed to load power data:', e);
   }
+}
+
+function updatePowerChart(power) {
+  const ctx = document.getElementById('power-chart');
+  if (!ctx) return;
+  
+  if (powerChart) {
+    powerChart.destroy();
+  }
+  
+  powerChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Fuel %', 'Battery %', 'Consumption kW'],
+      datasets: [{
+        label: 'Power Status',
+        data: [
+          power.generator_fuel || 0,
+          power.battery_level || 0,
+          power.power_consumption || 0
+        ],
+        backgroundColor: [
+          'rgba(90, 110, 58, 0.7)',
+          'rgba(90, 110, 58, 0.7)',
+          'rgba(255, 165, 0, 0.7)'
+        ],
+        borderColor: [
+          'rgba(90, 110, 58, 1)',
+          'rgba(90, 110, 58, 1)',
+          'rgba(255, 165, 0, 1)'
+        ],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          grid: { color: 'rgba(42, 48, 32, 0.3)' },
+          ticks: { color: '#5a6e3a' }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: '#5a6e3a' }
+        }
+      }
+    }
+  });
 }
 
 async function savePower() {
@@ -3110,9 +3130,53 @@ async function loadWater() {
     document.getElementById('water-treatment').value = water.treatment_status || 'operational';
     document.getElementById('water-filtration').value = water.filtration_status || 'operational';
     document.getElementById('water-last-updated').textContent = 'Last updated: ' + (water.last_updated || 'Never');
+    
+    updateWaterChart(water);
   } catch (e) {
     console.error('Failed to load water data:', e);
   }
+}
+
+function updateWaterChart(water) {
+  const ctx = document.getElementById('water-chart');
+  if (!ctx) return;
+  
+  if (waterChart) {
+    waterChart.destroy();
+  }
+  
+  const capacity = water.storage_capacity || 1000;
+  const level = water.storage_level || 0;
+  const percentage = capacity > 0 ? (level / capacity) * 100 : 0;
+  
+  waterChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Current', 'Available'],
+      datasets: [{
+        data: [level, Math.max(0, capacity - level)],
+        backgroundColor: [
+          percentage < 20 ? 'rgba(255, 82, 82, 0.7)' : 'rgba(90, 110, 58, 0.7)',
+          'rgba(42, 48, 32, 0.7)'
+        ],
+        borderColor: [
+          percentage < 20 ? 'rgba(255, 82, 82, 1)' : 'rgba(90, 110, 58, 1)',
+          'rgba(42, 48, 32, 1)'
+        ],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#5a6e3a' }
+        }
+      }
+    }
+  });
 }
 
 async function saveWater() {
@@ -3145,9 +3209,64 @@ async function loadAir() {
     document.getElementById('air-ventilation').value = air.ventilation_status || 'operational';
     document.getElementById('air-scrubber').value = air.scrubber_status || 'operational';
     document.getElementById('air-last-updated').textContent = 'Last updated: ' + (air.last_updated || 'Never');
+    
+    updateAirChart(air);
   } catch (e) {
     console.error('Failed to load air data:', e);
   }
+}
+
+function updateAirChart(air) {
+  const ctx = document.getElementById('air-chart');
+  if (!ctx) return;
+  
+  if (airChart) {
+    airChart.destroy();
+  }
+  
+  const oxygen = air.oxygen_level || 21;
+  const co2 = air.co2_level || 400;
+  
+  airChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ['O2 %', 'CO2 ppm'],
+      datasets: [{
+        label: 'Air Quality',
+        data: [oxygen, co2],
+        backgroundColor: [
+          oxygen < 19 ? 'rgba(255, 82, 82, 0.7)' : 'rgba(90, 110, 58, 0.7)',
+          co2 > 1000 ? 'rgba(255, 82, 82, 0.7)' : 'rgba(90, 110, 58, 0.7)'
+        ],
+        borderColor: [
+          oxygen < 19 ? 'rgba(255, 82, 82, 1)' : 'rgba(90, 110, 58, 1)',
+          co2 > 1000 ? 'rgba(255, 82, 82, 1)' : 'rgba(90, 110, 58, 1)'
+        ],
+        borderWidth: 2,
+        tension: 0.4,
+        pointRadius: 6,
+        pointHoverRadius: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(42, 48, 32, 0.3)' },
+          ticks: { color: '#5a6e3a' }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: '#5a6e3a' }
+        }
+      }
+    }
+  });
 }
 
 async function saveAir() {
@@ -3258,6 +3377,7 @@ function openSettings() {
   const settings = JSON.parse(localStorage.getItem('vault_settings') || '{}');
   document.getElementById('settings-alert-threshold').value = settings.alertThreshold || 20;
   document.getElementById('settings-auto-resolve').checked = settings.autoResolve || false;
+  document.getElementById('settings-discord-webhook').value = settings.discordWebhook || '';
   
   checkPushStatusForSettings();
   openModal('modal-settings');
@@ -3266,7 +3386,8 @@ function openSettings() {
 function saveSettings() {
   const settings = {
     alertThreshold: parseInt(document.getElementById('settings-alert-threshold').value) || 20,
-    autoResolve: document.getElementById('settings-auto-resolve').checked
+    autoResolve: document.getElementById('settings-auto-resolve').checked,
+    discordWebhook: document.getElementById('settings-discord-webhook').value.trim()
   };
   
   localStorage.setItem('vault_settings', JSON.stringify(settings));
@@ -3321,10 +3442,11 @@ async function sendNotification() {
   }
   
   try {
+    const settings = JSON.parse(localStorage.getItem('vault_settings') || '{}');
     const bunker_id = target === 'bunker' && currentBunker ? currentBunker.id : null;
     await api('/push/send', {
       method: 'POST',
-      body: JSON.stringify({ title, body, bunker_id })
+      body: JSON.stringify({ title, body, bunker_id, discord_webhook: settings.discordWebhook })
     });
     alert('Notification sent');
     document.getElementById('notify-title').value = '';

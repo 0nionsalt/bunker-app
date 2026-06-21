@@ -363,6 +363,14 @@ app.patch('/api/supplies/:id', auth, (req, res) => {
       if (!existingAlert) {
         db.prepare('INSERT INTO inventory_alerts (id, supply_id, bunker_id, alert_type, threshold_value, current_value, message) VALUES (?, ?, ?, ?, ?, ?, ?)')
           .run(uuidv4(), req.params.id, supply.bunker_id, 'low_stock', min_quantity || supply.min_quantity || 0, quantity, `${supply.name || 'Supply'} is below minimum threshold`);
+        
+        // Send Discord webhook alert
+        const discordWebhook = process.env.DISCORD_WEBHOOK_URL;
+        if (discordWebhook) {
+          const bunker = db.prepare('SELECT name FROM bunkers WHERE id = ?').get(supply.bunker_id);
+          const alertMessage = `**Low Stock Alert**\nBunker: ${bunker?.name || 'Unknown'}\nSupply: ${supply.name || 'Unknown'}\nCurrent: ${quantity}\nThreshold: ${min_quantity || supply.min_quantity || 0}`;
+          sendDiscordWebhook(discordWebhook, 'Low Stock Alert', alertMessage, 16711680);
+        }
       }
     }
   }
@@ -728,8 +736,34 @@ app.delete('/api/push/unsubscribe', auth, (req, res) => {
   res.json({ success: true });
 });
 
+async function sendDiscordWebhook(url, title, description, color = 16711680) {
+  if (!url) return;
+  try {
+    const payload = {
+      embeds: [{
+        title: `🔔 ${title}`,
+        description: description,
+        color: color,
+        timestamp: new Date().toISOString()
+      }]
+    };
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    
+    if (!response.ok) {
+      console.error('Discord webhook failed:', response.statusText);
+    }
+  } catch (e) {
+    console.error('Error sending Discord webhook:', e);
+  }
+}
+
 app.post('/api/push/send', auth, requireRole('admin', 'commander'), async (req, res) => {
-  const { title, body, bunker_id } = req.body;
+  const { title, body, bunker_id, discord_webhook } = req.body;
   if (!title || !body) return res.status(400).json({ error: 'Title and body required' });
   
   try {
@@ -766,6 +800,11 @@ app.post('/api/push/send', auth, requireRole('admin', 'commander'), async (req, 
       } catch (e) {
         results.push({ success: false, user_id: sub.user_id, error: e.message });
       }
+    }
+    
+    // Send Discord webhook if provided
+    if (discord_webhook) {
+      await sendDiscordWebhook(discord_webhook, title, body, 3447003);
     }
     
     res.json({ sent: results.length, results });

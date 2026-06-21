@@ -61,6 +61,7 @@ _(Change these immediately in production)_
 - Alert management with resolve functionality
 - Track alert history with timestamps
 - Visual indicators for active vs resolved alerts
+- Discord webhook integration for sending alerts to Discord channels
 
 ### Duty Roster
 - Schedule shifts for bunker members by day of week
@@ -81,6 +82,7 @@ _(Change these immediately in production)_
 - Web push notification support for alerts
 - Admins and Commanders can send notifications to all users or specific bunkers
 - Browser notification permission management
+- Discord webhook integration for sending notifications to Discord channels
 
 ### Dashboard
 - Live stats: total bunkers, users, supply units, rooms mapped
@@ -126,6 +128,9 @@ Data is persisted in a named Docker volume (`bunker-data`).
 |---|---|---|
 | `PORT` | `7532` | External port for the web UI |
 | `JWT_SECRET` | `change-me-in-production-2077` | JWT signing secret — **change this!** |
+| `DISCORD_WEBHOOK_URL` | `""` | Discord webhook URL for sending inventory alerts and push notifications to Discord channels |
+| `VAPID_PUBLIC_KEY` | `BL_SAMPLE_PUBLIC_KEY` | VAPID public key for web push notifications |
+| `VAPID_PRIVATE_KEY` | `BL_SAMPLE_PRIVATE_KEY` | VAPID private key for web push notifications |
 
 ---
 
