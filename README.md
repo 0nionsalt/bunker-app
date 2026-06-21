@@ -2,6 +2,8 @@
 
 > A full-stack bunker planning and management system with user roles, dynamic room layout builder, supply tracking, and a military-industrial command dashboard.
 
+> **Vibe coded** 🌊
+
 ---
 
 ## 🚀 Quick Start

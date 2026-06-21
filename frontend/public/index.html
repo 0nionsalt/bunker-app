@@ -472,10 +472,26 @@
     border-radius: 1px;
     text-align: center;
     line-height: 1.1;
-    cursor: pointer;
+    cursor: move;
     padding: 2px;
+    user-select: none;
   }
   .room-block:hover { filter: brightness(1.3); }
+  .room-block.dragging { opacity: 0.7; z-index: 100; }
+  .resize-handle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: var(--acid);
+    border-radius: 1px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .room-block:hover .resize-handle { opacity: 1; }
+  .resize-handle.se { bottom: 0; right: 0; cursor: se-resize; }
+  .resize-handle.sw { bottom: 0; left: 0; cursor: sw-resize; }
+  .resize-handle.ne { top: 0; right: 0; cursor: ne-resize; }
+  .resize-handle.nw { top: 0; left: 0; cursor: nw-resize; }
 
   /* ── SUPPLIES ── */
   .supply-table { width: 100%; border-collapse: collapse; }
@@ -864,8 +880,8 @@
         <div class="builder-canvas">
           <div class="panel">
             <div class="panel-header">
-              <div class="panel-title">Grid Map (20×15)</div>
-              <div class="text-muted">Click grid to place rooms</div>
+              <div class="panel-title">Grid Map (30×20)</div>
+              <div class="text-muted">Click grid to place rooms • Drag rooms to move • Drag corners to resize</div>
             </div>
             <div class="panel-body" style="overflow-x:auto">
               <div id="grid-canvas"></div>
@@ -993,8 +1009,8 @@
         </select>
       </div>
       <div class="grid-2">
-        <div class="form-group"><label>Grid X</label><input id="ar-x" type="number" value="0" min="0" max="18" /></div>
-        <div class="form-group"><label>Grid Y</label><input id="ar-y" type="number" value="0" min="0" max="13" /></div>
+        <div class="form-group"><label>Grid X</label><input id="ar-x" type="number" value="0" min="0" max="28" /></div>
+        <div class="form-group"><label>Grid Y</label><input id="ar-y" type="number" value="0" min="0" max="18" /></div>
         <div class="form-group"><label>Width (cells)</label><input id="ar-w" type="number" value="3" min="1" max="10" /></div>
         <div class="form-group"><label>Height (cells)</label><input id="ar-h" type="number" value="2" min="1" max="8" /></div>
       </div>
@@ -1034,8 +1050,8 @@
         </select>
       </div>
       <div class="grid-2">
-        <div class="form-group"><label>Grid X</label><input id="er-x" type="number" value="0" min="0" max="18" /></div>
-        <div class="form-group"><label>Grid Y</label><input id="er-y" type="number" value="0" min="0" max="13" /></div>
+        <div class="form-group"><label>Grid X</label><input id="er-x" type="number" value="0" min="0" max="28" /></div>
+        <div class="form-group"><label>Grid Y</label><input id="er-y" type="number" value="0" min="0" max="18" /></div>
         <div class="form-group"><label>Width (cells)</label><input id="er-w" type="number" value="3" min="1" max="10" /></div>
         <div class="form-group"><label>Height (cells)</label><input id="er-h" type="number" value="2" min="1" max="8" /></div>
       </div>
@@ -1161,6 +1177,16 @@ let allRooms = [];
 let allSupplies = [];
 let allRSSFeeds = [];
 let selectedRoomType = 'dormitory';
+let isDragging = false;
+let isResizing = false;
+let dragTarget = null;
+let resizeHandle = null;
+let dragStartX = 0;
+let dragStartY = 0;
+let initialRoomX = 0;
+let initialRoomY = 0;
+let initialRoomW = 0;
+let initialRoomH = 0;
 
 // ═══════════════════════ INIT ═══════════════════════
 window.onload = () => {
@@ -1369,7 +1395,7 @@ const ROOM_TYPES = {
   airlock:   { label:'Airlock',    color:'#4a2a1a', icon:'⊠' },
 };
 
-const GRID_W = 20, GRID_H = 15;
+const GRID_W = 30, GRID_H = 20;
 
 function buildRoomTypeList() {
   const el = document.getElementById('room-type-list');
@@ -1419,20 +1445,131 @@ function renderGrid() {
     const rt = ROOM_TYPES[room.type] || ROOM_TYPES.storage;
     const block = document.createElement('div');
     block.className = 'room-block';
+    block.dataset.roomId = room.id;
     block.style.background = room.color || rt.color;
     block.style.border = '1px solid rgba(255,255,255,0.15)';
     block.style.gridColumn = `${room.x+1} / span ${room.width}`;
     block.style.gridRow    = `${room.y+1} / span ${room.height}`;
     block.style.zIndex = '2';
     block.style.position = 'relative';
-    block.innerHTML = `<div>${rt.icon}<br>${room.name}</div>`;
-    block.onclick = (e) => { e.stopPropagation(); showRoomInfo(room); };
+    block.innerHTML = `
+      <div>${rt.icon}<br>${room.name}</div>
+      <div class="resize-handle nw" data-handle="nw"></div>
+      <div class="resize-handle ne" data-handle="ne"></div>
+      <div class="resize-handle sw" data-handle="sw"></div>
+      <div class="resize-handle se" data-handle="se"></div>
+    `;
+    block.onclick = (e) => {
+      if (!isDragging && !isResizing) {
+        e.stopPropagation();
+        showRoomInfo(room);
+      }
+    };
+    block.onmousedown = (e) => startDrag(e, room, block);
     canvas.appendChild(block);
     // block needs to overlay using grid child placement
     block.style.gridColumn = `${room.x+1} / span ${room.width}`;
     block.style.gridRow    = `${room.y+1} / span ${room.height}`;
   });
 }
+
+function startDrag(e, room, block) {
+  if (e.target.classList.contains('resize-handle')) {
+    isResizing = true;
+    resizeHandle = e.target.dataset.handle;
+  } else {
+    isDragging = true;
+  }
+  dragTarget = { room, block };
+  dragStartX = e.clientX;
+  dragStartY = e.clientY;
+  initialRoomX = room.x;
+  initialRoomY = room.y;
+  initialRoomW = room.width;
+  initialRoomH = room.height;
+  block.classList.add('dragging');
+  e.preventDefault();
+}
+
+document.addEventListener('mousemove', (e) => {
+  if (!dragTarget) return;
+  
+  const cellSize = 40;
+  const dx = e.clientX - dragStartX;
+  const dy = e.clientY - dragStartY;
+  const gridDx = Math.round(dx / cellSize);
+  const gridDy = Math.round(dy / cellSize);
+  
+  if (isDragging) {
+    let newX = initialRoomX + gridDx;
+    let newY = initialRoomY + gridDy;
+    // Constrain to grid bounds
+    newX = Math.max(0, Math.min(GRID_W - dragTarget.room.width, newX));
+    newY = Math.max(0, Math.min(GRID_H - dragTarget.room.height, newY));
+    
+    dragTarget.room.x = newX;
+    dragTarget.room.y = newY;
+    dragTarget.block.style.gridColumn = `${newX+1} / span ${dragTarget.room.width}`;
+    dragTarget.block.style.gridRow = `${newY+1} / span ${dragTarget.room.height}`;
+  } else if (isResizing) {
+    let newW = initialRoomW;
+    let newH = initialRoomH;
+    let newX = initialRoomX;
+    let newY = initialRoomY;
+    
+    if (resizeHandle.includes('e')) newW = Math.max(1, initialRoomW + gridDx);
+    if (resizeHandle.includes('w')) {
+      newW = Math.max(1, initialRoomW - gridDx);
+      newX = initialRoomX + gridDx;
+    }
+    if (resizeHandle.includes('s')) newH = Math.max(1, initialRoomH + gridDy);
+    if (resizeHandle.includes('n')) {
+      newH = Math.max(1, initialRoomH - gridDy);
+      newY = initialRoomY + gridDy;
+    }
+    
+    // Constrain to grid bounds
+    newX = Math.max(0, Math.min(GRID_W - newW, newX));
+    newY = Math.max(0, Math.min(GRID_H - newH, newY));
+    newW = Math.min(newW, GRID_W - newX);
+    newH = Math.min(newH, GRID_H - newY);
+    
+    dragTarget.room.x = newX;
+    dragTarget.room.y = newY;
+    dragTarget.room.width = newW;
+    dragTarget.room.height = newH;
+    dragTarget.block.style.gridColumn = `${newX+1} / span ${newW}`;
+    dragTarget.block.style.gridRow = `${newY+1} / span ${newH}`;
+  }
+});
+
+document.addEventListener('mouseup', async () => {
+  if (dragTarget) {
+    dragTarget.block.classList.remove('dragging');
+    
+    // Save changes to backend
+    try {
+      await api('/rooms/' + dragTarget.room.id, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          x: dragTarget.room.x,
+          y: dragTarget.room.y,
+          width: dragTarget.room.width,
+          height: dragTarget.room.height
+        })
+      });
+    } catch (e) {
+      console.error('Failed to save room changes:', e);
+      // Revert on error
+      loadRooms();
+    }
+    
+    dragTarget = null;
+    isDragging = false;
+    isResizing = false;
+    resizeHandle = null;
+  }
+});
 
 async function placeRoom(x, y) {
   if (!currentBunker) return;
