@@ -943,8 +943,23 @@
       <div class="nav-item" onclick="showPage('supplies')" id="nav-supplies" style="display:none">
         <span class="nav-icon">◻</span> Supplies
       </div>
+      <div class="nav-item" onclick="showPage('trends')" id="nav-trends" style="display:none">
+        <span class="nav-icon">📈</span> Trends
+      </div>
+      <div class="nav-item" onclick="showPage('alerts')" id="nav-alerts" style="display:none">
+        <span class="nav-icon">🔔</span> Alerts
+      </div>
       <div class="nav-item" onclick="showPage('members')" id="nav-members" style="display:none">
         <span class="nav-icon">◈</span> Members
+      </div>
+      <div class="nav-item" onclick="showPage('roster')" id="nav-roster" style="display:none">
+        <span class="nav-icon">◷</span> Duty Roster
+      </div>
+      <div class="nav-item" onclick="showPage('systems')" id="nav-systems" style="display:none">
+        <span class="nav-icon">⚡</span> Systems
+      </div>
+      <div class="nav-item" onclick="showPage('calculator')" id="nav-calculator" style="display:none">
+        <span class="nav-icon">◐</span> Calculator
       </div>
       <div class="nav-section admin-only" style="display:none">Command</div>
       <div class="nav-item admin-only" onclick="showPage('users')" id="nav-users" style="display:none">
@@ -957,7 +972,10 @@
         <div class="user-name" id="sb-username">—</div>
         <div class="user-role" id="sb-role">—</div>
       </div>
-      <button class="logout-btn" onclick="logout()" title="Logout">⏏</button>
+      <div class="flex-row">
+        <button class="logout-btn" onclick="openSettings()" title="Settings">⚙</button>
+        <button class="logout-btn" onclick="logout()" title="Logout">⏏</button>
+      </div>
     </div>
   </nav>
 
@@ -1139,6 +1157,64 @@
       </div>
     </div>
 
+    <!-- SUPPLY TRENDS -->
+    <div class="page" id="page-trends">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div class="panel-title" style="font-size:18px">📈 SUPPLY TRENDS</div>
+          <div class="text-muted" id="trends-bunker-name"></div>
+        </div>
+        <div class="flex-row">
+          <select id="trends-days" onchange="loadSupplyTrends()" class="form-group" style="margin:0">
+            <option value="7">Last 7 days</option>
+            <option value="14">Last 14 days</option>
+            <option value="30" selected>Last 30 days</option>
+            <option value="90">Last 90 days</option>
+          </select>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Recent Changes</div>
+        </div>
+        <div class="panel-body" style="padding:0">
+          <table class="supply-table">
+            <thead><tr>
+              <th>Supply</th><th>Category</th><th>Quantity</th><th>Change</th><th>Changed By</th><th>Time</th>
+            </tr></thead>
+            <tbody id="trends-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Consumption Summary</div>
+        </div>
+        <div class="panel-body" id="trends-summary">
+          <div class="text-muted">Loading trends data...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INVENTORY ALERTS -->
+    <div class="page" id="page-alerts">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div class="panel-title" style="font-size:18px">🔔 INVENTORY ALERTS</div>
+          <div class="text-muted" id="alerts-bunker-name"></div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadAlerts()">REFRESH</button>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Active Alerts</div>
+        </div>
+        <div class="panel-body" id="alerts-container">
+          <div class="text-muted">Loading alerts...</div>
+        </div>
+      </div>
+    </div>
+
     <!-- BUNKER DETAIL: MEMBERS -->
     <div class="page" id="page-members">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
@@ -1167,6 +1243,250 @@
             <thead><tr><th>Callsign</th><th>Role</th><th>Registered</th><th>Actions</th></tr></thead>
             <tbody id="users-tbody"></tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- DUTY ROSTER -->
+    <div class="page" id="page-roster">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div class="panel-title" style="font-size:18px">◷ DUTY ROSTER</div>
+          <div class="text-muted" id="roster-bunker-name"></div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openAddRoster()">+ ADD SHIFT</button>
+      </div>
+      <div class="panel">
+        <div class="panel-body" style="padding:0">
+          <table class="users-table">
+            <thead><tr><th>Day</th><th>Shift</th><th>Time</th><th>Personnel</th><th>Role</th><th>Actions</th></tr></thead>
+            <tbody id="roster-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SYSTEMS (Power, Water, Air) -->
+    <div class="page" id="page-systems">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div class="panel-title" style="font-size:18px">⚡ SYSTEMS</div>
+          <div class="text-muted" id="systems-bunker-name"></div>
+        </div>
+      </div>
+      
+      <!-- Power Management -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">⚡ Power Management</div>
+          <button class="btn btn-ghost btn-sm" onclick="loadPower()">REFRESH</button>
+        </div>
+        <div class="panel-body">
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Generator Fuel (%)</label>
+              <input id="power-fuel" type="number" min="0" max="100" step="0.1" />
+            </div>
+            <div class="form-group">
+              <label>Generator Capacity (L)</label>
+              <input id="power-capacity" type="number" min="0" />
+            </div>
+            <div class="form-group">
+              <label>Battery Level (%)</label>
+              <input id="power-battery" type="number" min="0" max="100" step="0.1" />
+            </div>
+            <div class="form-group">
+              <label>Power Consumption (kW)</label>
+              <input id="power-consumption" type="number" min="0" step="0.1" />
+            </div>
+          </div>
+          <div class="text-muted" style="margin-top:12px" id="power-last-updated"></div>
+          <button class="btn btn-primary mt-8" onclick="savePower()">SAVE POWER STATUS</button>
+        </div>
+      </div>
+
+      <!-- Water System -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">◆ Water System</div>
+          <button class="btn btn-ghost btn-sm" onclick="loadWater()">REFRESH</button>
+        </div>
+        <div class="panel-body">
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Storage Level (L)</label>
+              <input id="water-level" type="number" min="0" />
+            </div>
+            <div class="form-group">
+              <label>Storage Capacity (L)</label>
+              <input id="water-capacity" type="number" min="0" />
+            </div>
+            <div class="form-group">
+              <label>Treatment Status</label>
+              <select id="water-treatment">
+                <option value="operational">Operational</option>
+                <option value="maintenance">Maintenance</option>
+                <option value="offline">Offline</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Filtration Status</label>
+              <select id="water-filtration">
+                <option value="operational">Operational</option>
+                <option value="maintenance">Maintenance</option>
+                <option value="offline">Offline</option>
+              </select>
+            </div>
+          </div>
+          <div class="text-muted" style="margin-top:12px" id="water-last-updated"></div>
+          <button class="btn btn-primary mt-8" onclick="saveWater()">SAVE WATER STATUS</button>
+        </div>
+      </div>
+
+      <!-- Air Quality -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">◈ Air Quality</div>
+          <button class="btn btn-ghost btn-sm" onclick="loadAir()">REFRESH</button>
+        </div>
+        <div class="panel-body">
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Oxygen Level (%)</label>
+              <input id="air-oxygen" type="number" min="0" max="100" step="0.1" />
+            </div>
+            <div class="form-group">
+              <label>CO2 Level (ppm)</label>
+              <input id="air-co2" type="number" min="0" step="1" />
+            </div>
+            <div class="form-group">
+              <label>Ventilation Status</label>
+              <select id="air-ventilation">
+                <option value="operational">Operational</option>
+                <option value="maintenance">Maintenance</option>
+                <option value="offline">Offline</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Scrubber Status</label>
+              <select id="air-scrubber">
+                <option value="operational">Operational</option>
+                <option value="maintenance">Maintenance</option>
+                <option value="offline">Offline</option>
+              </select>
+            </div>
+          </div>
+          <div class="text-muted" style="margin-top:12px" id="air-last-updated"></div>
+          <button class="btn btn-primary mt-8" onclick="saveAir()">SAVE AIR STATUS</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESOURCE CALCULATOR -->
+    <div class="page" id="page-calculator">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div class="panel-title" style="font-size:18px">◐ RESOURCE CALCULATOR</div>
+          <div class="text-muted" id="calc-bunker-name"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Calculate Resource Needs</div>
+        </div>
+        <div class="panel-body">
+          <div class="form-group">
+            <label>Duration (days)</label>
+            <input id="calc-duration" type="number" value="30" min="1" max="365" />
+          </div>
+          <button class="btn btn-primary" onclick="calculateResources()">CALCULATE</button>
+        </div>
+      </div>
+      <div class="panel" id="calc-results" style="display:none">
+        <div class="panel-header">
+          <div class="panel-title">Results</div>
+        </div>
+        <div class="panel-body">
+          <div class="stats-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="stat-card">
+              <div class="stat-label">Personnel</div>
+              <div class="stat-value" id="calc-people">—</div>
+              <div class="stat-sub">people</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Duration</div>
+              <div class="stat-value" id="calc-days">—</div>
+              <div class="stat-sub">days</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Water Needed</div>
+              <div class="stat-value" id="calc-water">—</div>
+              <div class="stat-sub">gallons total</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Food Needed</div>
+              <div class="stat-value" id="calc-food">—</div>
+              <div class="stat-sub">calories total</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Oxygen Needed</div>
+              <div class="stat-value" id="calc-oxygen">—</div>
+              <div class="stat-sub">liters total</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Power Needed</div>
+              <div class="stat-value" id="calc-power">—</div>
+              <div class="stat-sub">kWh total</div>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="text-muted">Per person requirements:</div>
+          <div style="margin-top:8px">
+            <div class="bunker-meta-item">Water: <span id="calc-water-per">—</span> gallons</div>
+            <div class="bunker-meta-item">Food: <span id="calc-food-per">—</span> calories</div>
+            <div class="bunker-meta-item">Oxygen: <span id="calc-oxygen-per">—</span> liters</div>
+            <div class="bunker-meta-item">Power: <span id="calc-power-per">—</span> kWh</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PUSH NOTIFICATIONS -->
+    <div class="page" id="page-notifications">
+      <div class="panel-title" style="font-size:18px;margin-bottom:16px">🔔 PUSH NOTIFICATIONS</div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Notification Settings</div>
+        </div>
+        <div class="panel-body">
+          <div id="push-status" class="text-muted">Checking push notification status...</div>
+          <div style="margin-top:12px">
+            <button class="btn btn-primary" id="btn-enable-push" onclick="enablePushNotifications()" style="display:none">ENABLE NOTIFICATIONS</button>
+            <button class="btn btn-danger" id="btn-disable-push" onclick="disablePushNotifications()" style="display:none">DISABLE NOTIFICATIONS</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel" id="send-notification-panel" style="display:none">
+        <div class="panel-header">
+          <div class="panel-title">Send Notification</div>
+        </div>
+        <div class="panel-body">
+          <div class="form-group">
+            <label>Title</label>
+            <input id="notify-title" placeholder="Alert title" />
+          </div>
+          <div class="form-group">
+            <label>Message</label>
+            <textarea id="notify-body" rows="3" placeholder="Alert message"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Target</label>
+            <select id="notify-target">
+              <option value="all">All Users</option>
+              <option value="bunker">Current Bunker Only</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="sendNotification()">SEND NOTIFICATION</button>
         </div>
       </div>
     </div>
@@ -1396,6 +1716,106 @@
   </div>
 </div>
 
+<!-- Add Roster -->
+<div class="modal-overlay" id="modal-add-roster">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add Shift</div>
+      <button class="modal-close" onclick="closeModal('modal-add-roster')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Personnel</label>
+        <select id="roster-user"></select>
+      </div>
+      <div class="form-group">
+        <label>Shift Name</label>
+        <input id="roster-name" placeholder="e.g. Morning Watch" />
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Start Time</label>
+          <input id="roster-start" type="time" value="08:00" />
+        </div>
+        <div class="form-group">
+          <label>End Time</label>
+          <input id="roster-end" type="time" value="16:00" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Day of Week</label>
+        <select id="roster-day">
+          <option value="Monday">Monday</option>
+          <option value="Tuesday">Tuesday</option>
+          <option value="Wednesday">Wednesday</option>
+          <option value="Thursday">Thursday</option>
+          <option value="Friday">Friday</option>
+          <option value="Saturday">Saturday</option>
+          <option value="Sunday">Sunday</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Role</label>
+        <select id="roster-role">
+          <option value="crew">Crew</option>
+          <option value="supervisor">Supervisor</option>
+          <option value="specialist">Specialist</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-roster')">Cancel</button>
+      <button class="btn btn-primary" onclick="addRoster()">ADD SHIFT</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings -->
+<div class="modal-overlay" id="modal-settings">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">⚙ Settings</div>
+      <button class="modal-close" onclick="closeModal('modal-settings')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="panel" style="margin-bottom:16px">
+        <div class="panel-header">
+          <div class="panel-title">🔔 Push Notifications</div>
+        </div>
+        <div class="panel-body">
+          <div id="settings-push-status" class="text-muted" style="margin-bottom:12px">Checking status...</div>
+          <div class="flex-row">
+            <button class="btn btn-primary btn-sm" id="settings-enable-push" onclick="enablePushNotifications()" style="display:none">ENABLE</button>
+            <button class="btn btn-danger btn-sm" id="settings-disable-push" onclick="disablePushNotifications()" style="display:none">DISABLE</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">🔔 Inventory Alerts</div>
+        </div>
+        <div class="panel-body">
+          <div class="form-group">
+            <label>Alert Threshold (%)</label>
+            <input id="settings-alert-threshold" type="number" value="20" min="0" max="100" />
+            <div class="text-muted" style="font-size:11px;margin-top:4px">Alert when supply quantity falls below this percentage of minimum threshold</div>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="settings-auto-resolve" />
+              Auto-resolve alerts when stock is replenished
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-settings')">Close</button>
+      <button class="btn btn-primary" onclick="saveSettings()">SAVE SETTINGS</button>
+    </div>
+  </div>
+</div>
+
 <!-- Barcode/QR Scanner -->
 <div class="modal-overlay" id="modal-scanner">
   <div class="modal" style="width: 500px">
@@ -1594,13 +2014,19 @@ function showPage(name) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   document.getElementById('nav-' + name)?.classList.add('active');
-  const titles = { dashboard:'DASHBOARD', bunkers:'MY BUNKERS', supplies:'SUPPLIES', members:'PERSONNEL', users:'ALL PERSONNEL' };
+  const titles = { dashboard:'DASHBOARD', bunkers:'MY BUNKERS', supplies:'SUPPLIES', trends:'SUPPLY TRENDS', alerts:'INVENTORY ALERTS', members:'PERSONNEL', users:'ALL PERSONNEL', roster:'DUTY ROSTER', systems:'SYSTEMS', calculator:'RESOURCE CALCULATOR', notifications:'PUSH NOTIFICATIONS' };
   document.getElementById('topbar-title').textContent = titles[name] || name.toUpperCase();
   if (name === 'dashboard') { loadStats(); loadBunkers(); }
   if (name === 'bunkers') loadBunkers();
   if (name === 'supplies' && currentBunker) loadSupplies();
+  if (name === 'trends' && currentBunker) loadSupplyTrends();
+  if (name === 'alerts' && currentBunker) loadAlerts();
   if (name === 'members' && currentBunker) loadMembers();
   if (name === 'users') loadUsers();
+  if (name === 'roster' && currentBunker) loadRoster();
+  if (name === 'systems' && currentBunker) { loadPower(); loadWater(); loadAir(); }
+  if (name === 'calculator' && currentBunker) { document.getElementById('calc-results').style.display = 'none'; }
+  if (name === 'notifications') checkPushStatus();
   // Close mobile sidebar after navigation
   const sidebar = document.querySelector('.sidebar');
   const overlay = document.getElementById('sidebar-overlay');
@@ -1613,9 +2039,19 @@ function showPage(name) {
 function selectBunker(b) {
   currentBunker = b;
   document.getElementById('nav-supplies').style.display = '';
+  document.getElementById('nav-trends').style.display = '';
+  document.getElementById('nav-alerts').style.display = '';
   document.getElementById('nav-members').style.display = '';
+  document.getElementById('nav-roster').style.display = '';
+  document.getElementById('nav-systems').style.display = '';
+  document.getElementById('nav-calculator').style.display = '';
   document.getElementById('supplies-bunker-name').textContent = b.name;
+  document.getElementById('trends-bunker-name').textContent = b.name;
+  document.getElementById('alerts-bunker-name').textContent = b.name;
   document.getElementById('members-bunker-name').textContent = b.name;
+  document.getElementById('roster-bunker-name').textContent = b.name;
+  document.getElementById('systems-bunker-name').textContent = b.name;
+  document.getElementById('calc-bunker-name').textContent = b.name;
   showPage('supplies');
 }
 
@@ -2220,6 +2656,130 @@ async function deleteSupply(id) {
   loadSupplies();
 }
 
+// ═══════════════════════ SUPPLY TRENDS ═══════════════════════
+async function loadSupplyTrends() {
+  if (!currentBunker) return;
+  try {
+    const days = document.getElementById('trends-days').value;
+    const history = await api(`/bunkers/${currentBunker.id}/supply-history?days=${days}`);
+    const tbody = document.getElementById('trends-tbody');
+    
+    if (!history.length) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="icon">📈</div>No supply changes recorded</div></td></tr>`;
+      document.getElementById('trends-summary').innerHTML = '<div class="text-muted">No data available for the selected period</div>';
+      return;
+    }
+    
+    tbody.innerHTML = history.map(h => `
+      <tr>
+        <td style="font-weight:500">${h.supply_name}</td>
+        <td><span class="cat-badge cat-${h.category}">${h.category}</span></td>
+        <td class="supply-qty">${h.quantity}</td>
+        <td>
+          <span style="color:${h.change_type === 'increase' ? 'var(--green)' : 'var(--red)'}">
+            ${h.change_type === 'increase' ? '↑' : '↓'}
+          </span>
+        </td>
+        <td class="text-muted">${h.changed_by_name || '—'}</td>
+        <td class="text-muted">${new Date(h.created_at).toLocaleString()}</td>
+      </tr>
+    `).join('');
+    
+    // Calculate summary
+    const decreases = history.filter(h => h.change_type === 'decrease');
+    const increases = history.filter(h => h.change_type === 'increase');
+    const byCategory = {};
+    history.forEach(h => {
+      if (!byCategory[h.category]) byCategory[h.category] = { changes: 0, decrease: 0 };
+      byCategory[h.category].changes++;
+      if (h.change_type === 'decrease') byCategory[h.category].decrease++;
+    });
+    
+    document.getElementById('trends-summary').innerHTML = `
+      <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
+        <div class="stat-card">
+          <div class="stat-label">Total Changes</div>
+          <div class="stat-value">${history.length}</div>
+          <div class="stat-sub">recorded events</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Decreases</div>
+          <div class="stat-value text-red">${decreases.length}</div>
+          <div class="stat-sub">consumption events</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Increases</div>
+          <div class="stat-value text-acid">${increases.length}</div>
+          <div class="stat-sub">restocking events</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="text-muted mb-12">By Category:</div>
+      ${Object.entries(byCategory).map(([cat, data]) => `
+        <div class="bunker-meta-item" style="margin-bottom:4px">
+          <span class="cat-badge cat-${cat}">${cat}</span>
+          <span style="margin-left:8px">${data.changes} changes (${data.decrease} decreases)</span>
+        </div>
+      `).join('')}
+    `;
+  } catch (e) {
+    console.error('Failed to load supply trends:', e);
+  }
+}
+
+// ═══════════════════════ INVENTORY ALERTS ═══════════════════════
+async function loadAlerts() {
+  if (!currentBunker) return;
+  try {
+    const alerts = await api(`/bunkers/${currentBunker.id}/alerts`);
+    const container = document.getElementById('alerts-container');
+    
+    if (!alerts.length) {
+      container.innerHTML = '<div class="empty-state"><div class="icon">🔔</div>No active alerts</div>';
+      return;
+    }
+    
+    container.innerHTML = alerts.map(a => `
+      <div class="rss-feed-item" style="border-left: 3px solid ${a.is_resolved ? 'var(--green)' : 'var(--red)'}">
+        <div class="rss-feed-header">
+          <div>
+            <div class="rss-feed-name">${a.supply_name}</div>
+            <div class="text-muted" style="font-size:11px">${a.category} • ${a.unit}</div>
+          </div>
+          ${!a.is_resolved ? `
+            <button class="btn btn-primary btn-sm" onclick="resolveAlert('${a.id}')">RESOLVE</button>
+          ` : `
+            <span class="tag" style="background:rgba(124,184,78,0.2);color:var(--green)">RESOLVED</span>
+          `}
+        </div>
+        <div style="margin-bottom:8px">
+          <span class="alert ${a.is_resolved ? 'alert-success' : 'alert-error'}" style="display:inline-block;padding:4px 8px;font-size:11px;margin:0">
+            ${a.alert_type === 'low_stock' ? '⚠️ LOW STOCK' : a.alert_type}
+          </span>
+          <span class="text-muted" style="margin-left:8px">Threshold: ${a.threshold_value} • Current: ${a.current_value}</span>
+        </div>
+        <div class="text-muted" style="font-size:11px">${a.message}</div>
+        <div class="text-muted" style="font-size:10px;margin-top:8px">
+          Created: ${new Date(a.created_at).toLocaleString()}
+          ${a.resolved_at ? ` • Resolved: ${new Date(a.resolved_at).toLocaleString()}` : ''}
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    console.error('Failed to load alerts:', e);
+  }
+}
+
+async function resolveAlert(id) {
+  try {
+    await api(`/alerts/${id}/resolve`, { method: 'PATCH' });
+    loadAlerts();
+  } catch (e) {
+    console.error('Failed to resolve alert:', e);
+    alert('Failed to resolve alert');
+  }
+}
+
 // ═══════════════════════ MEMBERS ═══════════════════════
 async function loadMembers() {
   const members = await api(`/bunkers/${currentBunker.id}/members`);
@@ -2427,6 +2987,352 @@ function useScannedCode() {
 function openScannerForField(fieldId) {
   targetFieldId = fieldId;
   openScanner();
+}
+
+// ═══════════════════════ DUTY ROSTER ═══════════════════════
+async function loadRoster() {
+  if (!currentBunker) return;
+  try {
+    const roster = await api(`/bunkers/${currentBunker.id}/roster`);
+    const members = await api(`/bunkers/${currentBunker.id}/members`);
+    const tbody = document.getElementById('roster-tbody');
+    
+    if (!roster.length) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="icon">◷</div>No shifts scheduled</div></td></tr>`;
+      return;
+    }
+    
+    tbody.innerHTML = roster.map(r => `
+      <tr>
+        <td>${r.day_of_week}</td>
+        <td>${r.shift_name}</td>
+        <td class="text-muted">${r.shift_start} - ${r.shift_end}</td>
+        <td style="font-family:var(--font-head);font-weight:700">${r.username}</td>
+        <td><span class="tag">${r.role}</span></td>
+        <td>
+          <button class="btn btn-danger btn-sm" onclick="deleteRoster('${r.id}')">✕</button>
+        </td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    console.error('Failed to load roster:', e);
+  }
+}
+
+async function openAddRoster() {
+  if (!currentBunker) return;
+  try {
+    const members = await api(`/bunkers/${currentBunker.id}/members`);
+    const select = document.getElementById('roster-user');
+    select.innerHTML = members.map(m => `<option value="${m.id}">${m.username}</option>`).join('');
+    openModal('modal-add-roster');
+  } catch (e) {
+    console.error('Failed to load members:', e);
+  }
+}
+
+async function addRoster() {
+  if (!currentBunker) return;
+  const user_id = document.getElementById('roster-user').value;
+  const shift_name = document.getElementById('roster-name').value.trim();
+  const shift_start = document.getElementById('roster-start').value;
+  const shift_end = document.getElementById('roster-end').value;
+  const day_of_week = document.getElementById('roster-day').value;
+  const role = document.getElementById('roster-role').value;
+  
+  if (!shift_name || !shift_start || !shift_end) return;
+  
+  try {
+    await api(`/bunkers/${currentBunker.id}/roster`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id, shift_name, shift_start, shift_end, day_of_week, role })
+    });
+    closeModal('modal-add-roster');
+    loadRoster();
+  } catch (e) {
+    console.error('Failed to add shift:', e);
+    alert('Failed to add shift');
+  }
+}
+
+async function deleteRoster(id) {
+  if (!confirm('Remove this shift?')) return;
+  try {
+    await api('/roster/' + id, { method: 'DELETE' });
+    loadRoster();
+  } catch (e) {
+    console.error('Failed to delete shift:', e);
+  }
+}
+
+// ═══════════════════════ POWER MANAGEMENT ═══════════════════════
+async function loadPower() {
+  if (!currentBunker) return;
+  try {
+    const power = await api(`/bunkers/${currentBunker.id}/power`);
+    document.getElementById('power-fuel').value = power.generator_fuel || 0;
+    document.getElementById('power-capacity').value = power.generator_capacity || 100;
+    document.getElementById('power-battery').value = power.battery_level || 100;
+    document.getElementById('power-consumption').value = power.power_consumption || 0;
+    document.getElementById('power-last-updated').textContent = 'Last updated: ' + (power.last_updated || 'Never');
+  } catch (e) {
+    console.error('Failed to load power data:', e);
+  }
+}
+
+async function savePower() {
+  if (!currentBunker) return;
+  try {
+    await api(`/bunkers/${currentBunker.id}/power`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        generator_fuel: parseFloat(document.getElementById('power-fuel').value),
+        generator_capacity: parseFloat(document.getElementById('power-capacity').value),
+        battery_level: parseFloat(document.getElementById('power-battery').value),
+        power_consumption: parseFloat(document.getElementById('power-consumption').value)
+      })
+    });
+    loadPower();
+    alert('Power status saved');
+  } catch (e) {
+    console.error('Failed to save power data:', e);
+    alert('Failed to save power status');
+  }
+}
+
+// ═══════════════════════ WATER SYSTEM ═══════════════════════
+async function loadWater() {
+  if (!currentBunker) return;
+  try {
+    const water = await api(`/bunkers/${currentBunker.id}/water`);
+    document.getElementById('water-level').value = water.storage_level || 100;
+    document.getElementById('water-capacity').value = water.storage_capacity || 1000;
+    document.getElementById('water-treatment').value = water.treatment_status || 'operational';
+    document.getElementById('water-filtration').value = water.filtration_status || 'operational';
+    document.getElementById('water-last-updated').textContent = 'Last updated: ' + (water.last_updated || 'Never');
+  } catch (e) {
+    console.error('Failed to load water data:', e);
+  }
+}
+
+async function saveWater() {
+  if (!currentBunker) return;
+  try {
+    await api(`/bunkers/${currentBunker.id}/water`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        storage_level: parseFloat(document.getElementById('water-level').value),
+        storage_capacity: parseFloat(document.getElementById('water-capacity').value),
+        treatment_status: document.getElementById('water-treatment').value,
+        filtration_status: document.getElementById('water-filtration').value
+      })
+    });
+    loadWater();
+    alert('Water status saved');
+  } catch (e) {
+    console.error('Failed to save water data:', e);
+    alert('Failed to save water status');
+  }
+}
+
+// ═══════════════════════ AIR QUALITY ═══════════════════════
+async function loadAir() {
+  if (!currentBunker) return;
+  try {
+    const air = await api(`/bunkers/${currentBunker.id}/air`);
+    document.getElementById('air-oxygen').value = air.oxygen_level || 21;
+    document.getElementById('air-co2').value = air.co2_level || 400;
+    document.getElementById('air-ventilation').value = air.ventilation_status || 'operational';
+    document.getElementById('air-scrubber').value = air.scrubber_status || 'operational';
+    document.getElementById('air-last-updated').textContent = 'Last updated: ' + (air.last_updated || 'Never');
+  } catch (e) {
+    console.error('Failed to load air data:', e);
+  }
+}
+
+async function saveAir() {
+  if (!currentBunker) return;
+  try {
+    await api(`/bunkers/${currentBunker.id}/air`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        oxygen_level: parseFloat(document.getElementById('air-oxygen').value),
+        co2_level: parseFloat(document.getElementById('air-co2').value),
+        ventilation_status: document.getElementById('air-ventilation').value,
+        scrubber_status: document.getElementById('air-scrubber').value
+      })
+    });
+    loadAir();
+    alert('Air quality status saved');
+  } catch (e) {
+    console.error('Failed to save air data:', e);
+    alert('Failed to save air quality status');
+  }
+}
+
+// ═══════════════════════ RESOURCE CALCULATOR ═══════════════════════
+async function calculateResources() {
+  if (!currentBunker) return;
+  const duration = parseInt(document.getElementById('calc-duration').value) || 30;
+  try {
+    const results = await api(`/bunkers/${currentBunker.id}/calculate?duration=${duration}`);
+    
+    document.getElementById('calc-people').textContent = results.people_count;
+    document.getElementById('calc-days').textContent = results.duration_days;
+    document.getElementById('calc-water').textContent = results.total_water_needed.toLocaleString();
+    document.getElementById('calc-food').textContent = results.total_food_calories.toLocaleString();
+    document.getElementById('calc-oxygen').textContent = results.total_oxygen_needed.toLocaleString();
+    document.getElementById('calc-power').textContent = results.total_power_needed.toLocaleString();
+    
+    document.getElementById('calc-water-per').textContent = results.water_per_person.toLocaleString();
+    document.getElementById('calc-food-per').textContent = results.food_per_person.toLocaleString();
+    document.getElementById('calc-oxygen-per').textContent = results.oxygen_per_person.toLocaleString();
+    document.getElementById('calc-power-per').textContent = results.power_per_person.toLocaleString();
+    
+    document.getElementById('calc-results').style.display = '';
+  } catch (e) {
+    console.error('Failed to calculate resources:', e);
+    alert('Failed to calculate resources');
+  }
+}
+
+// ═══════════════════════ PUSH NOTIFICATIONS ═══════════════════════
+async function checkPushStatus() {
+  const statusEl = document.getElementById('push-status');
+  const enableBtn = document.getElementById('btn-enable-push');
+  const disableBtn = document.getElementById('btn-disable-push');
+  const sendPanel = document.getElementById('send-notification-panel');
+  
+  if (!('Notification' in window)) {
+    if (statusEl) statusEl.textContent = 'Push notifications not supported in this browser';
+    return;
+  }
+  
+  if (Notification.permission === 'granted') {
+    if (statusEl) statusEl.textContent = 'Notifications enabled';
+    if (enableBtn) enableBtn.style.display = 'none';
+    if (disableBtn) disableBtn.style.display = 'inline-flex';
+    if (sendPanel && (currentUser.role === 'admin' || currentUser.role === 'commander')) {
+      sendPanel.style.display = '';
+    }
+  } else if (Notification.permission === 'denied') {
+    if (statusEl) statusEl.textContent = 'Notifications blocked. Please enable in browser settings.';
+    if (enableBtn) enableBtn.style.display = 'none';
+    if (disableBtn) disableBtn.style.display = 'none';
+  } else {
+    if (statusEl) statusEl.textContent = 'Notifications not enabled';
+    if (enableBtn) enableBtn.style.display = 'inline-flex';
+    if (disableBtn) disableBtn.style.display = 'none';
+  }
+}
+
+function checkPushStatusForSettings() {
+  const statusEl = document.getElementById('settings-push-status');
+  const enableBtn = document.getElementById('settings-enable-push');
+  const disableBtn = document.getElementById('settings-disable-push');
+  
+  if (!('Notification' in window)) {
+    statusEl.textContent = 'Push notifications not supported in this browser';
+    enableBtn.style.display = 'none';
+    disableBtn.style.display = 'none';
+    return;
+  }
+  
+  if (Notification.permission === 'granted') {
+    statusEl.textContent = 'Notifications enabled';
+    enableBtn.style.display = 'none';
+    disableBtn.style.display = 'inline-flex';
+  } else if (Notification.permission === 'denied') {
+    statusEl.textContent = 'Notifications blocked. Please enable in browser settings.';
+    enableBtn.style.display = 'none';
+    disableBtn.style.display = 'none';
+  } else {
+    statusEl.textContent = 'Notifications not enabled';
+    enableBtn.style.display = 'inline-flex';
+    disableBtn.style.display = 'none';
+  }
+}
+
+function openSettings() {
+  // Load saved settings
+  const settings = JSON.parse(localStorage.getItem('vault_settings') || '{}');
+  document.getElementById('settings-alert-threshold').value = settings.alertThreshold || 20;
+  document.getElementById('settings-auto-resolve').checked = settings.autoResolve || false;
+  
+  checkPushStatusForSettings();
+  openModal('modal-settings');
+}
+
+function saveSettings() {
+  const settings = {
+    alertThreshold: parseInt(document.getElementById('settings-alert-threshold').value) || 20,
+    autoResolve: document.getElementById('settings-auto-resolve').checked
+  };
+  
+  localStorage.setItem('vault_settings', JSON.stringify(settings));
+  closeModal('modal-settings');
+  alert('Settings saved');
+}
+
+async function enablePushNotifications() {
+  if (!('Notification' in window)) {
+    alert('Push notifications not supported in this browser');
+    return;
+  }
+  
+  const permission = await Notification.requestPermission();
+  if (permission === 'granted') {
+    try {
+      const subscription = await navigator.serviceWorker.ready.then(async (registration) => {
+        // In a real implementation, you would use web-push to subscribe
+        // For now, we'll just mark as enabled
+        return null;
+      });
+      
+      // For demo purposes, just mark as enabled
+      checkPushStatus();
+      checkPushStatusForSettings();
+    } catch (e) {
+      console.error('Failed to subscribe to push:', e);
+      alert('Failed to enable notifications');
+    }
+  }
+}
+
+async function disablePushNotifications() {
+  try {
+    await api('/push/unsubscribe', { method: 'DELETE' });
+    checkPushStatus();
+    checkPushStatusForSettings();
+  } catch (e) {
+    console.error('Failed to unsubscribe:', e);
+    alert('Failed to disable notifications');
+  }
+}
+
+async function sendNotification() {
+  const title = document.getElementById('notify-title').value.trim();
+  const body = document.getElementById('notify-body').value.trim();
+  const target = document.getElementById('notify-target').value;
+  
+  if (!title || !body) {
+    alert('Title and message are required');
+    return;
+  }
+  
+  try {
+    const bunker_id = target === 'bunker' && currentBunker ? currentBunker.id : null;
+    await api('/push/send', {
+      method: 'POST',
+      body: JSON.stringify({ title, body, bunker_id })
+    });
+    alert('Notification sent');
+    document.getElementById('notify-title').value = '';
+    document.getElementById('notify-body').value = '';
+  } catch (e) {
+    console.error('Failed to send notification:', e);
+    alert('Failed to send notification. This feature requires VAPID keys to be configured.');
+  }
 }
 
 // ═══════════════════════ MODALS ═══════════════════════
