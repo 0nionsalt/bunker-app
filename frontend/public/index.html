@@ -48,6 +48,7 @@
   }
   .auth-box {
     width: 380px;
+    max-width: 90vw;
     border: 1px solid var(--border2);
     background: var(--surface);
     padding: 40px;
@@ -261,6 +262,17 @@
     gap: 12px;
     position: sticky; top: 0; z-index: 50;
   }
+  .menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 4px;
+    transition: color 0.15s;
+  }
+  .menu-toggle:hover { color: var(--acid); }
   .topbar-title {
     font-family: var(--font-head);
     font-size: 18px;
@@ -640,6 +652,54 @@
     overflow-y: auto;
     position: relative;
   }
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 99;
+  }
+  .sidebar-overlay.open { display: block; }
+
+  /* ── CONFIRMATION DIALOG ── */
+  .confirm-dialog {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.7);
+    z-index: 2000;
+  }
+  .confirm-dialog.open { display: flex; }
+  .confirm-box {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 24px;
+    min-width: 320px;
+    max-width: 90vw;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .confirm-title {
+    font-family: var(--font-head);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 12px;
+  }
+  .confirm-message {
+    color: var(--text);
+    font-size: 14px;
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+  .confirm-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+  }
+
   .modal-header {
     padding: 16px 20px;
     border-bottom: 1px solid var(--border);
@@ -776,15 +836,54 @@
     .builder-container { flex-direction: column; }
     .builder-tools { width: 100%; }
   }
-  @media (max-width: 600px) {
-    .sidebar { transform: translateX(-220px); }
+  @media (max-width: 768px) {
+    .menu-toggle { display: block; }
+    .sidebar { transform: translateX(-220px); transition: transform 0.3s ease; }
+    .sidebar.open { transform: translateX(0); }
     .main { margin-left: 0; }
+    .topbar { padding: 0 16px; }
+    .topbar-title { font-size: 16px; }
+    .page { padding: 16px; }
+    .bunker-grid { grid-template-columns: 1fr; }
+    .grid-2 { grid-template-columns: 1fr; }
+    .supply-table, .users-table { font-size: 12px; }
+    .supply-table th, .supply-table td, .users-table th, .users-table td { padding: 8px 6px; }
+    .panel-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .panel-header .btn { width: 100%; justify-content: center; }
+    .modal { width: 95vw; max-height: 90vh; }
+    .modal-footer { flex-direction: column; }
+    .modal-footer .btn { width: 100%; justify-content: center; }
+    .grid-cell { width: 32px; height: 32px; }
+  }
+  @media (max-width: 480px) {
+    .auth-box { padding: 24px; }
+    .auth-logo { font-size: 32px; }
     .stats-grid { grid-template-columns: 1fr; }
+    .stat-value { font-size: 28px; }
+    .topbar-time { display: none; }
+    .bunker-card { padding: 14px; }
+    .bunker-card-name { font-size: 16px; }
+    .flex-row { flex-direction: column; align-items: stretch; }
+    .flex-row .btn { width: 100%; justify-content: center; }
+    .grid-cell { width: 28px; height: 28px; }
   }
 </style>
 </head>
 <body>
 <div class="scan-line"></div>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<!-- Confirmation Dialog -->
+<div class="confirm-dialog" id="confirm-dialog">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirm-title">Confirm Action</div>
+    <div class="confirm-message" id="confirm-message">Are you sure?</div>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost" id="confirm-cancel">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok">Confirm</button>
+    </div>
+  </div>
+</div>
 
 <!-- ═══════════════════════ AUTH ═══════════════════════ -->
 <div id="auth-screen">
@@ -867,6 +966,7 @@
   <!-- MAIN -->
   <div class="main">
     <div class="topbar">
+      <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
       <div class="topbar-title" id="topbar-title">DASHBOARD</div>
       <div class="status-dot"></div>
       <div class="topbar-time">
@@ -1309,6 +1409,14 @@ window.onload = () => {
   if (token && currentUser) initApp();
 };
 
+// ═══════════════════════ MOBILE SIDEBAR ═══════════════════════
+function toggleSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('open');
+}
+
 // Check version when tab becomes visible or window gets focus
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) checkVersion();
@@ -1442,6 +1550,13 @@ function showPage(name) {
   if (name === 'supplies' && currentBunker) loadSupplies();
   if (name === 'members' && currentBunker) loadMembers();
   if (name === 'users') loadUsers();
+  // Close mobile sidebar after navigation
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (sidebar.classList.contains('open')) {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('open');
+  }
 }
 
 function selectBunker(b) {
@@ -1683,18 +1798,48 @@ function updateDeleteButton() {
 
 async function confirmDeleteSelected() {
   if (selectedRoomsForDelete.size === 0) return;
-  if (!confirm(`Delete ${selectedRoomsForDelete.size} room(s)?`)) return;
   
-  try {
-    for (const roomId of selectedRoomsForDelete) {
-      await api('/rooms/' + roomId, { method: 'DELETE' });
+  showConfirmDialog(
+    'Delete Rooms',
+    `Are you sure you want to delete ${selectedRoomsForDelete.size} room(s)? This action cannot be undone.`,
+    async () => {
+      try {
+        for (const roomId of selectedRoomsForDelete) {
+          await api('/rooms/' + roomId, { method: 'DELETE' });
+        }
+        cancelDeleteMode();
+        loadRooms();
+      } catch (e) {
+        console.error('Failed to delete rooms:', e);
+        alert('Failed to delete some rooms');
+      }
     }
-    cancelDeleteMode();
-    loadRooms();
-  } catch (e) {
-    console.error('Failed to delete rooms:', e);
-    alert('Failed to delete some rooms');
-  }
+  );
+}
+
+function showConfirmDialog(title, message, onConfirm) {
+  const dialog = document.getElementById('confirm-dialog');
+  const titleEl = document.getElementById('confirm-title');
+  const messageEl = document.getElementById('confirm-message');
+  const cancelBtn = document.getElementById('confirm-cancel');
+  const okBtn = document.getElementById('confirm-ok');
+  
+  titleEl.textContent = title;
+  messageEl.textContent = message;
+  
+  const closeDialog = () => {
+    dialog.classList.remove('open');
+    cancelBtn.onclick = null;
+    okBtn.onclick = null;
+  };
+  
+  cancelBtn.onclick = closeDialog;
+  okBtn.onclick = () => {
+    onConfirm();
+    closeDialog();
+  };
+  
+  dialog.classList.add('open');
 }
 
 function showContextMenu(e, room) {
