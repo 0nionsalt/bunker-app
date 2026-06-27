@@ -1377,9 +1377,15 @@
             </div>
           </div>
           <div class="divider"></div>
-          <div>
-            <div class="text-muted mb-8" style="font-size:12px">Air Quality</div>
-            <canvas id="air-chart" style="max-height:200px"></canvas>
+          <div class="grid-2">
+            <div>
+              <div class="text-muted mb-8" style="font-size:12px">Air Quality</div>
+              <canvas id="air-chart" style="max-height:200px"></canvas>
+            </div>
+            <div>
+              <div class="text-muted mb-8" style="font-size:12px">Supply Trends (Last 7 Days)</div>
+              <canvas id="supply-trends-chart" style="max-height:200px"></canvas>
+            </div>
           </div>
         </div>
       </div>
@@ -2020,7 +2026,7 @@ function showPage(name) {
   if (name === 'alerts' && currentBunker) loadAlerts();
   if (name === 'users') loadUsers();
   if (name === 'roster' && currentBunker) loadRoster();
-  if (name === 'systems' && currentBunker) { loadPower(); loadWater(); loadAir(); }
+  if (name === 'systems' && currentBunker) { loadPower(); loadWater(); loadAir(); loadSupplyTrendsForSystems(); }
   if (name === 'calculator' && currentBunker) { document.getElementById('calc-results').style.display = 'none'; }
   if (name === 'notifications') checkPushStatus();
   // Close mobile sidebar after navigation
@@ -3028,7 +3034,7 @@ async function deleteRoster(id) {
 }
 
 // ═══════════════════════ POWER MANAGEMENT ═══════════════════════
-let powerChart, waterChart, airChart;
+let powerChart, waterChart, airChart, supplyTrendsChart;
 
 async function loadPower() {
   if (!currentBunker) return;
@@ -3253,6 +3259,113 @@ function updateAirChart(air) {
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(42, 48, 32, 0.3)' },
+          ticks: { color: '#5a6e3a' }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: '#5a6e3a' }
+        }
+      }
+    }
+  });
+}
+
+async function loadSupplyTrendsForSystems() {
+  if (!currentBunker) return;
+  try {
+    const history = await api(`/bunkers/${currentBunker.id}/supply-history?days=7`);
+    updateSupplyTrendsChart(history);
+  } catch (e) {
+    console.error('Failed to load supply trends for chart:', e);
+  }
+}
+
+function updateSupplyTrendsChart(history) {
+  const ctx = document.getElementById('supply-trends-chart');
+  if (!ctx) return;
+  
+  if (supplyTrendsChart) {
+    supplyTrendsChart.destroy();
+  }
+  
+  // Group by category and count changes
+  const categoryData = {};
+  history.forEach(h => {
+    if (!categoryData[h.category]) {
+      categoryData[h.category] = { increases: 0, decreases: 0 };
+    }
+    if (h.change_type === 'increase') {
+      categoryData[h.category].increases++;
+    } else {
+      categoryData[h.category].decreases++;
+    }
+  });
+  
+  const labels = Object.keys(categoryData);
+  const increases = labels.map(cat => categoryData[cat].increases);
+  const decreases = labels.map(cat => categoryData[cat].decreases);
+  
+  if (labels.length === 0) {
+    // Show empty chart
+    supplyTrendsChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['No Data'],
+        datasets: [{
+          label: 'Changes',
+          data: [0],
+          backgroundColor: 'rgba(90, 110, 58, 0.3)',
+          borderColor: 'rgba(90, 110, 58, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: 'rgba(42, 48, 32, 0.3)' }, ticks: { color: '#5a6e3a' } },
+          x: { grid: { display: false }, ticks: { color: '#5a6e3a' } }
+        }
+      }
+    });
+    return;
+  }
+  
+  supplyTrendsChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Increases',
+          data: increases,
+          backgroundColor: 'rgba(90, 110, 58, 0.7)',
+          borderColor: 'rgba(90, 110, 58, 1)',
+          borderWidth: 1
+        },
+        {
+          label: 'Decreases',
+          data: decreases,
+          backgroundColor: 'rgba(255, 82, 82, 0.7)',
+          borderColor: 'rgba(255, 82, 82, 1)',
+          borderWidth: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#5a6e3a' }
+        }
       },
       scales: {
         y: {
